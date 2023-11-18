@@ -1,22 +1,17 @@
-from flask import Flask, render_template, request, url_for, flash, redirect
+from flask import Flask, render_template, request, jsonify
 from flask_cors import CORS, cross_origin
 
 # project specific
-from aichatapi import AiChatAPI
 from db.db_tool import DB
 from definitions.user import User
 from pprint import pprint
-
-
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'vnkdjnfjknfl1232#'
 app.config['DEBUG'] = 'True'
 
 my_db = DB()
-my_api = AiChatAPI(my_db=my_db)  ## todo add Jarvis
 CORS(app)
-
 
 #
 # Static Pages
@@ -67,45 +62,25 @@ def fetch_user():
 
 
 #
+
 @app.route('/api/questions', methods=['POST', 'GET'])
+@cross_origin()
 def fetch_questions():
-    # pprint(vars(request))
-    # print("fetch_questions() for user Start")
-    user_uuid = None
-    # for key in request.form:
-    #    print("fetch_questions() %s : %s" % (key, request.form[key]))
+    if request.method != 'POST':
+        return jsonify({'error': 'Only POST method is allowed'}), 405
+
+    user_uuid = request.form.get('user_uuid')
+    if not user_uuid:
+        return jsonify({'error': 'No user_uuid provided'}), 400
 
     try:
-        if request.method == 'POST':
-            result = request.form
-            if 'user_uuid' in result and result['user_uuid'] is not None and result['user_uuid'] != '':
-                user_uuid = result['user_uuid']
-                # print("fetch_questions() user_uuid ok: %s" % user_uuid)
-            else:
-                print("ERROR:: No user_uuid given to fetch_questions()")
-        else:
-            print("ERROR:: request not used the POST method")
+        questions = my_db.get_questions(user_uuid=user_uuid)
+        return jsonify(questions), 200
     except Exception as e:
-        print("ERROR:: Error bei app.questions(): %s " % e)
+        print("ERROR:: app.fetch_questions(): %s" % e)
+        # Hier ein geeignetes Logging-Framework verwenden
+        return jsonify({'error': 'Internal server error'}), 500
 
-    # print("app.fetch_questions() UUID: %s :: %s" % (type(user_uuid), str(user_uuid)))
-    questions = my_api.get_questions(user_uuid=user_uuid)
-
-    # print("/api/questions sending: %s" % (questions,))
-
-    # dummy_question_full = {
-    #     "id": "WXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",
-    #     "creator": "pAUL",
-    #     "creatorUuid": "",
-    #     "title": "Eine neue Frage",
-    #     "content": "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed non risus. Suspendisse ...",
-    #     "dateCreated": "",
-    #     "dateUpdated": "",
-    #     "tags": []
-    # }
-    # dummy_array = [dummy_question_full]
-
-    return questions
 
 
 #

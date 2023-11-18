@@ -1,7 +1,3 @@
-from pprint import pprint
-
-
-
 #
 # Data Class User
 #
