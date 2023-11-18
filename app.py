@@ -104,6 +104,8 @@ def new_question():
 
     try:
         question = my_db.new_question(user_uuid=user_uuid, title=title, content=content)
+        print("app.new_question() Success")
+        pprint(question)
         return jsonify(question), 200
     except Exception as e:
         print("ERROR:: app.new_question(): %s" % e)
