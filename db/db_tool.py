@@ -14,18 +14,18 @@ class DB:
         self.connect_db()
 
     # Data functions
-    def get_user(self, user_uuid=None, name=None, email=None, password=None):
-        user = User()
-        print("Get User Start: %s / %s / %s / %s" % (user_uuid, name, email, password))
+    def get_user(self, user=None):
 
-        if user_uuid is not None and user_uuid == 'undefined':
+        print("Get User Start: %s / %s / %s / %s" % (user.uuid, user.name, user.email, user.password))
+
+        if user.uuid is not None and user.uuid == 'undefined':
             print("ERROR:: get_user() user_uuid is undefined")
 
-        if user_uuid is not None:
+        if user.uuid is not None:
             cur = self.conn.cursor()
             try:
-                print("get user by user_uuid: %s" % user_uuid)
-                stmt = ("select (uuid, username, email, password) from users where uuid = '%s'" % user_uuid)
+                print("get user by user_uuid: %s" % user.uuid)
+                stmt = ("select (uuid, username, email, password) from users where uuid = '%s'" % user.uuid)
                 cur.execute(stmt)
                 res = cur.fetchone()
                 if res is None:
@@ -36,14 +36,14 @@ class DB:
                 user.email = res[2]
                 user.password = res[3]
             except Exception as e:
-                print("Error33:: get_user() by user_uuid: %s" % e)
+                print("Error33:: get_user() by user.uuid: %s" % e)
             cur.close()
             return user
 
-        if name is not None:
-            print("get user by name: %s :: %s" % (name, password))
+        if user.name is not None:
+            print("get user by name: %s :: %s" % (user.name, user.password))
             cur = self.conn.cursor()
-            stmt = "select * from users where username = '%s'" % name
+            stmt = "select * from users where username = '%s'" % user.name
             print("get_user() stmt: %s" % stmt)
             try:
                 cur.execute(stmt)
@@ -53,15 +53,15 @@ class DB:
                 res = None
 
             if res is None:
-                stmt = "insert into users (uuid, username, email, password) values (DEFAULT,'%s','%s','%s') RETURNING uuid" % (name, email, password)
+                stmt = "insert into users (uuid, username, email, password) values (DEFAULT,'%s','%s','%s') RETURNING uuid" % (user.name, user.email, user.password)
                 raise Exception("ERROR:: new user by name: %s" % stmt)
                 ## cur.execute(stmt)
                 res = cur.fetchone()
                 print("INSERT: " + str(res[0]))
                 user.uuid = res[0]
-                user.name = name
-                user.email = email
-                user.password = password
+                user.name = user.name
+                user.email = user.email
+                user.password = user.password
                 self.conn.commit()
                 print("New User in DB: %s" % str(user))
             else:
@@ -73,10 +73,10 @@ class DB:
             cur.close()
             return user
 
-        if email is not None:
-            print("get user by mail: %s :: %s" % (email, password))
+        if user.email is not None:
+            print("get user by mail: %s :: %s" % (user.email, user.password))
             cur = self.conn.cursor()
-            stmt = "select * from users where email = '%s'" % email
+            stmt = "select * from users where email = '%s'" % user.email
             try:
                 cur.execute(stmt)
                 res = cur.fetchone()
@@ -85,7 +85,7 @@ class DB:
                 res = None
 
             if res is None:
-                stmt = "insert into users (user_uuid, username, email, password) values (DEFAULT,'%s','%s','%s') RETURNING user_uuid" % (name, email, password)
+                stmt = "insert into users (uuid, username, email, password) values (DEFAULT,'%s','%s','%s') RETURNING uuid" % (user.name, user.email, user.password)
                 try:
                     cur.execute(stmt)
                     res = cur.fetchone()
@@ -94,9 +94,9 @@ class DB:
                     res = None
                 print("INSERT: %s" % stmt )
                 user.uuid = res[0]
-                user.name = name
-                user.email = email
-                user.password = password
+                user.name = user.name
+                user.email = user.email
+                user.password = user.password
                 self.conn.commit()
                 print("New User in DB: %s" % str(user))
 
@@ -109,7 +109,6 @@ class DB:
 
             cur.close()
             print("get_user() Ende: %s" % user)
-
 
             return user
 
@@ -148,7 +147,7 @@ class DB:
 
         if uuid is not None:
             cur = self.conn.cursor()
-            stmt = "select (user_uuid, title) from questions where user_uuid = '%s'" % uuid
+            stmt = "select (uuid, title) from questions where uuid = '%s'" % uuid
             cur.execute(stmt)
             res = cur.fetchone()
             if res is None:
@@ -164,7 +163,7 @@ class DB:
             res = cur.fetchone()
 
             if res is None:
-                stmt = "insert into questions (user_uuid, title) values (DEFAULT,'%s') RETURNING user_uuid" % title
+                stmt = "insert into questions (uuid, title) values (DEFAULT,'%s') RETURNING uuid" % title
                 cur.execute(stmt)
                 res = cur.fetchone()
                 # print("INSERT Question: " + str(res[0]))

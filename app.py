@@ -58,9 +58,10 @@ def fetch_user():
 
     # msg = {'name': name, 'password': password, 'email': email}
     # user = my_api.login_user(msg=msg)
+    user3 = my_db.get_user(user=user)
 
-    print("HERE fetch_user() Ende:")
-    pprint(vars(user))
+    print("HERE USER3 fetch_user() Ende:")
+    pprint(vars(user3))
     user2 = {'name': 'Peter', 'uuid': 'c382bc64-7817-11ee-b70f-047c16bbac51', 'email': 'ahem00@gmail.com', 'password': '123456'}
     return user2
 

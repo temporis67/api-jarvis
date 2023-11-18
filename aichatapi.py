@@ -40,6 +40,7 @@ class AiChatAPI:
             user = self.my_db.get_user(user_uuid=user_uuid)  ## *****
 
         if user is not None:
-            return self.my_db.get_questions(user_uuid=user_uuid)
+            # return self.my_db.get_questions(user_uuid=user_uuid)
+            return None
         else:
             return None
