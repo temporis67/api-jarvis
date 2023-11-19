@@ -44,9 +44,9 @@ def fetch_user():
             for key in user.__dict__:
                 if key in result and result[key] is not None and result[key] != '':
                     setattr(user, key, result[key])
-                    # print("fetch_user() %s : %s" % (key, result[key]))
+                    print("fetch_user() %s : %s" % (key, result[key]))
                 else:
-                    # print("fetch_user() %s not found" % key)
+                    print("fetch_user() %s not found" % key)
                     pass
         else:
             print("request not used the POST method")
@@ -69,10 +69,12 @@ def fetch_questions():
         return jsonify({'error': 'Only POST method is allowed'}), 405
 
     user_uuid = request.form.get('user_uuid')
-    if not user_uuid:
+    if not user_uuid or str(user_uuid) == 'null':
+        print("ERROR:: app.fetch_questions(): No user_uuid provided")
         return jsonify({'error': 'No user_uuid provided'}), 400
 
     try:
+        print("app.fetch_questions() user_uuid: %s" % user_uuid)
         questions = my_db.get_questions(user_uuid=user_uuid)
         print("app.fetch_questions() Success - %s questions found" % len(questions))
         return jsonify(questions), 200

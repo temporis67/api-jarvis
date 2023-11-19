@@ -17,6 +17,8 @@ class DB:
         if user_uuid is None:
             print("ERROR db_tool.get_questions(user_uuid):: No user_uuid given.")  # Log error oder raise an exception
             return {}
+        else:
+            print("db_tool.get_questions(user_uuid):: user_uuid: %s" % user_uuid)
 
         # Parametrisierte Abfrage verwenden
         query = ("SELECT qu.question_uuid, q.title, q.content, q.date_created, q.date_updated "
@@ -44,6 +46,7 @@ class DB:
 
         except Exception as e:
             print("ERROR db_tool.get_questions(user_uuid):: %s" % e)
+            self.conn.rollback()
             return {}
 
     # Data functions
@@ -51,6 +54,11 @@ class DB:
         # Nutze eine parametrisierte Abfrage, um SQL-Injection zu verhindern
         query = None
         values = None
+
+        if user is None:
+            # Log error or raise an exception
+            print("ERROR: get_user() - no user")
+            return None
 
         if user.uuid:
             query = "SELECT uuid, username, email, password FROM users WHERE uuid = %s"
@@ -63,6 +71,7 @@ class DB:
             values = (user.email,)
 
         if query:
+            print("get_user() - query: %s, %s" % (query, values))
             return self.execute_query(query, values, user)
         else:
             # Log error or raise an exception
