@@ -151,6 +151,7 @@ def update_question():
 @app.route('/api/delete_question', methods=['POST', 'GET'])
 @cross_origin()
 def delete_question():
+
     if request.method != 'POST':
         return jsonify({'error': 'Only POST method is allowed'}), 405
 
@@ -166,6 +167,7 @@ def delete_question():
 
     try:
         question = my_db.delete_question(user_uuid=user_uuid, question_uuid=question_uuid)
+        print("app.delete_question() Success %s" % question_uuid)
         return jsonify(question), 200
     except Exception as e:
         print("ERROR:: app.delete_question(): %s" % e)
