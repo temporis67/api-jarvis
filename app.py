@@ -181,7 +181,7 @@ def delete_question():
 @app.route('/api/answers', methods=['POST', 'GET'])
 @cross_origin()
 def get_answers():
-    print("app.fetch_answers() Start")
+    print("app.get_answers() Start")
     if request.method != 'POST':
         return jsonify({'error': 'Only POST method is allowed'}), 405
 

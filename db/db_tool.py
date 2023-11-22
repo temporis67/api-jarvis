@@ -220,7 +220,7 @@ class DB:
             print("ERROR db_tool.get_answers(question_uuid):: No question_uuid given.")
             return {}
         else:
-            print("db_tool.get_answers(question_uuid):: question_uuid: %s" % question_uuid)
+            print("Start db_tool.get_answers(question_uuid):: question_uuid: %s" % question_uuid)
 
         # Parametrisierte Abfrage verwenden
         query = ("SELECT answers.*, users.username, users.uuid as user_uuid "
@@ -236,14 +236,13 @@ class DB:
                 cur.execute(query, values)
                 res = cur.fetchall()
 
+                # Hole die Spaltennamen
+                column_names = [desc[0] for desc in cur.description]
+
                 answers = {}
-                for a in res:
-                    answers[a[0]] = {
-                        'uuid': a[0],
-                        'content': a[1],
-                        'date_created': str(a[2]),
-                        'date_updated': str(a[3])
-                    }
+                for row in res:
+                    answer = {column_names[i]: str(row[i]) for i in range(len(column_names))}
+                    answers[row[column_names.index('uuid')]] = answer
 
                 return answers
 
