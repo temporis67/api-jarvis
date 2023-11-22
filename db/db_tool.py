@@ -4,14 +4,76 @@
 import psycopg2
 from definitions.user import User
 from definitions.question import Question
+from definitions.answer import Answer
 
 
 class DB:
     conn = None
 
+    # system functions
     def __init__(self):
         self.connect_db()
 
+    def connect_db(self):
+        self.conn = psycopg2.connect(
+            host="localhost",
+            database="ai-chat-db",
+            user="ai-chat-pguser",
+            password="--jarvis+")
+
+    #
+    # user functions
+    #
+    def get_user(self, user=None):
+        # Nutze eine parametrisierte Abfrage, um SQL-Injection zu verhindern
+        query = None
+        values = None
+
+        if user is None:
+            # Log error or raise an exception
+            print("ERROR: get_user() - no user")
+            return None
+
+        if user.uuid:
+            query = "SELECT uuid, username, email, password FROM users WHERE uuid = %s"
+            values = (user.uuid,)
+        elif user.name:
+            query = "SELECT uuid, username, email, password FROM users WHERE username = %s"
+            values = (user.name,)
+        elif user.email:
+            query = "SELECT uuid, username, email, password FROM users WHERE email = %s"
+            values = (user.email,)
+
+        if query:
+            print("get_user() - query: %s, %s" % (query, values))
+            return self.execute_query_user(query, values, user)
+        else:
+            # Log error or raise an exception
+            print("get_user() - no query")
+            pass
+
+    def execute_query_user(self, query, values, user):
+        try:
+            with self.conn.cursor() as cur:
+                cur.execute(query, values)
+                res = cur.fetchone()
+
+                if res:
+                    user.uuid, user.name, user.email, user.password = res
+                    # Log successful operation
+                    return user
+                else:
+                    # Handle user not found or insert new user
+                    pass
+
+        except Exception as e:
+            # Log exception
+            print("execute_query() - %s" % e)
+            pass
+
+    #
+    # questions functions
+    #
     def get_questions(self, user_uuid=None):
         # Überprüfen, ob eine user_uuid vorhanden ist
         if user_uuid is None:
@@ -48,62 +110,6 @@ class DB:
             print("ERROR db_tool.get_questions(user_uuid):: %s" % e)
             self.conn.rollback()
             return {}
-
-    # Data functions
-    def get_user(self, user=None):
-        # Nutze eine parametrisierte Abfrage, um SQL-Injection zu verhindern
-        query = None
-        values = None
-
-        if user is None:
-            # Log error or raise an exception
-            print("ERROR: get_user() - no user")
-            return None
-
-        if user.uuid:
-            query = "SELECT uuid, username, email, password FROM users WHERE uuid = %s"
-            values = (user.uuid,)
-        elif user.name:
-            query = "SELECT uuid, username, email, password FROM users WHERE username = %s"
-            values = (user.name,)
-        elif user.email:
-            query = "SELECT uuid, username, email, password FROM users WHERE email = %s"
-            values = (user.email,)
-
-        if query:
-            print("get_user() - query: %s, %s" % (query, values))
-            return self.execute_query(query, values, user)
-        else:
-            # Log error or raise an exception
-            print("get_user() - no query")
-            pass
-
-    def execute_query(self, query, values, user):
-        try:
-            with self.conn.cursor() as cur:
-                cur.execute(query, values)
-                res = cur.fetchone()
-
-                if res:
-                    user.uuid, user.name, user.email, user.password = res
-                    # Log successful operation
-                    return user
-                else:
-                    # Handle user not found or insert new user
-                    pass
-
-        except Exception as e:
-            # Log exception
-            print("execute_query() - %s" % e)
-            pass
-
-    # system functions
-    def connect_db(self):
-        self.conn = psycopg2.connect(
-            host="localhost",
-            database="ai-chat-db",
-            user="ai-chat-pguser",
-            password="--jarvis+")
 
     def new_question(self, user_uuid, title, content):
 
@@ -202,4 +208,116 @@ class DB:
 
         except Exception as e:
             print("ERROR db_tool.delete_question(user_uuid):: %s" % e)
+            return {}
+
+    #
+    # answers functions
+    #
+
+    def get_answers(self, question_uuid=None):
+        # Überprüfen, ob eine user_uuid vorhanden ist
+        if question_uuid is None:
+            print("ERROR db_tool.get_answers(question_uuid):: No question_uuid given.")
+            return {}
+        else:
+            print("db_tool.get_answers(question_uuid):: question_uuid: %s" % question_uuid)
+
+        # Parametrisierte Abfrage verwenden
+        query = ("SELECT answers.*, users.username, users.uuid as user_uuid "
+                 "FROM answers "
+                 "JOIN question_answer ON answers.uuid = question_answer.answer_uuid "
+                 "JOIN user_question ON question_answer.question_uuid = user_question.question_uuid "
+                 "JOIN users ON user_question.user_uuid = users.uuid "
+                 "WHERE question_answer.question_uuid = %s")
+        values = (question_uuid,)
+
+        try:
+            with self.conn.cursor() as cur:
+                cur.execute(query, values)
+                res = cur.fetchall()
+
+                answers = {}
+                for a in res:
+                    answers[a[0]] = {
+                        'uuid': a[0],
+                        'content': a[1],
+                        'date_created': str(a[2]),
+                        'date_updated': str(a[3])
+                    }
+
+                return answers
+
+        except Exception as e:
+            print("ERROR db_tool.get_answers(question_uuid):: %s" % e)
+            self.conn.rollback()
+            return {}
+
+    def new_answer(self, user_uuid, question_uuid):
+
+        if question_uuid is None or user_uuid is None:
+            print("ERROR db_tool.new_answer(user_uuid, question_uuid):: No user/question_uuid given.")
+            return {}
+        query = (
+            "insert into answers (uuid, creator, question) values (DEFAULT, %s, %s) RETURNING uuid, date_created, "
+            "date_updated")
+        values = (user_uuid, question_uuid)
+
+        try:
+            with self.conn.cursor() as cur:
+                cur.execute(query, values)
+                res = cur.fetchone()
+
+                answer = {
+                    'uuid': res[0],
+                    'creator': user_uuid,
+                    'question': question_uuid,
+                    'date_created': str(res[1]),
+                    'date_updated': str(res[2])
+                }
+
+                print("New Answer in DB: %s" % str(answer))
+
+                update_question_query = ("insert into question_answer (question_uuid, answer_uuid) values (%s, %s)")
+                update_question_values = (question_uuid, answer['uuid'])
+                cur.execute(update_question_query, update_question_values)
+
+                self.conn.commit()
+
+                return answer
+
+        except Exception as e:
+            print("ERROR db_tool.new_answer(user_uuid, question_uuid):: %s" % e)
+            return {}
+
+    def update_answer(self, answer_uuid, title, content):
+
+        # Überprüfen, ob eine answer_uuid vorhanden ist
+        if answer_uuid is None:
+            print("ERROR db_tool.update_answer(answer_uuid):: No answer_uuid given.")
+            return {}
+
+        query = ("update answers set title = %s, content = %s, date_updated = DEFAULT where uuid = %s RETURNING "
+                 "date_updated")
+        values = (title, content, answer_uuid)
+
+        try:
+            with self.conn.cursor() as cur:
+                cur.execute(query, values)
+                res = cur.fetchone()
+
+                answer = {
+                    'uuid': answer_uuid,
+                    'title': title,
+                    'content': content,
+                    'date_updated': str(res[0])
+                }
+
+                print("Updated Answer in DB: %s" % str(answer))
+
+                self.conn.commit()
+
+                return answer
+
+        except Exception as e:
+            print("ERROR db_tool.update_answer(answer_uuid):: %s" % e)
             return {}

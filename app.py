@@ -14,6 +14,7 @@ app.config['DEBUG'] = 'True'
 my_db = DB()
 CORS(app)
 
+
 #
 # Static Pages
 #
@@ -22,14 +23,8 @@ def index():  # put application's code here
     return render_template('index.html')
 
 
-def get_param(param):
-    if param in request.form and request.form[param] is not None and request.form[param] != '':
-        return request.form[param]
-    else:
-        return None
-
 #
-# Hooks for NextJS API
+# handling user
 #
 @app.route('/api/user', methods=['POST', 'GET'])
 @cross_origin()
@@ -61,6 +56,9 @@ def fetch_user():
     return user.__dict__, 200
 
 
+#
+# handling questions
+#
 @app.route('/api/questions', methods=['POST', 'GET'])
 @cross_origin()
 def fetch_questions():
@@ -82,6 +80,7 @@ def fetch_questions():
         print("ERROR:: app.fetch_questions(): %s" % e)
         # Hier ein geeignetes Logging-Framework verwenden
         return jsonify({'error': 'Internal server error'}), 500
+
 
 @app.route('/api/new_question', methods=['POST', 'GET'])
 @cross_origin()
@@ -149,11 +148,10 @@ def update_question():
         # Hier ein geeignetes Logging-Framework verwenden
         return jsonify({'error': 'Internal server error'}), 500
 
-# TODO: Implement delete_question
+
 @app.route('/api/delete_question', methods=['POST', 'GET'])
 @cross_origin()
 def delete_question():
-
     if request.method != 'POST':
         return jsonify({'error': 'Only POST method is allowed'}), 405
 
@@ -177,6 +175,86 @@ def delete_question():
         return jsonify({'error': 'Internal server error'}), 500
 
 
+#
+# handling answers
+#
+@app.route('/api/answers', methods=['POST', 'GET'])
+@cross_origin()
+def get_answers():
+    print("app.fetch_answers() Start")
+    if request.method != 'POST':
+        return jsonify({'error': 'Only POST method is allowed'}), 405
+
+    question_uuid = request.form.get('question_uuid')
+    if not question_uuid or str(question_uuid) == 'null':
+        print("ERROR:: app.fetch_answers(): No question_uuid provided")
+        return jsonify({'error': 'No question_uuid provided'}), 400
+
+    try:
+        print("app.fetch_answers() question_uuid: %s" % question_uuid)
+        answers = my_db.get_answers(question_uuid=question_uuid)
+        print("app.fetch_answers() Success - %s answers found" % len(answers))
+        return jsonify(answers), 200
+    except Exception as e:
+        print("ERROR:: app.fetch_answers(): %s" % e)
+        # Hier ein geeignetes Logging-Framework verwenden
+        return jsonify({'error': 'Internal server error'}), 500
+
+
+@app.route('/api/new_answer', methods=['POST', 'GET'])
+@cross_origin()
+def new_answer():
+    if request.method != 'POST':
+        return jsonify({'error': 'Only POST method is allowed'}), 405
+
+    user_uuid = request.form.get('user_uuid')
+    if not user_uuid:
+        print("ERROR:: app.new_answer(): No user_uuid provided")
+        return jsonify({'error': 'No user_uuid provided'}), 400
+
+    question_uuid = request.form.get('question_uuid')
+    if not question_uuid:
+        print("ERROR:: app.new_answer(): No question_uuid provided")
+        return jsonify({'error': 'No question_uuid provided'}), 400
+
+    try:
+        answer = my_db.new_answer(user_uuid=user_uuid, question_uuid=question_uuid)
+        print("app.new_answer() Success")
+        pprint(answer)
+        return jsonify(answer), 200
+    except Exception as e:
+        print("ERROR:: app.new_answer(): %s" % e)
+        # Hier ein geeignetes Logging-Framework verwenden
+        return jsonify({'error': 'Internal server error'}), 500
+
+@app.route('/api/update_answer', methods=['POST', 'GET'])
+@cross_origin()
+def update_answer():
+    if request.method != 'POST':
+        return jsonify({'error': 'Only POST method is allowed'}), 405
+
+    answer_uuid = request.form.get('answer_uuid')
+    if not answer_uuid:
+        print("ERROR:: app.update_answer(): No answer_uuid provided")
+        return jsonify({'error': 'No answer_uuid provided'}), 400
+
+    title = request.form.get('title')
+    if not title:
+        print("ERROR:: app.update_answer(): No title provided")
+        return jsonify({'error': 'No title provided'}), 400
+
+    content = request.form.get('content')
+    if not content:
+        print("ERROR:: app.update_answer(): No content provided")
+        return jsonify({'error': 'No content provided'}), 400
+
+    try:
+        answer = my_db.update_answer(answer_uuid=answer_uuid, title=title, content=content)
+        return jsonify(answer), 200
+    except Exception as e:
+        print("ERROR:: app.update_answer(): %s" % e)
+        # Hier ein geeignetes Logging-Framework verwenden
+        return jsonify({'error': 'Internal server error'}), 500
 
 #
 # Start App
