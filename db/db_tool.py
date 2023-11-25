@@ -320,3 +320,31 @@ class DB:
         except Exception as e:
             print("ERROR db_tool.update_answer(answer_uuid):: %s" % e)
             return {}
+
+    def delete_answer(self, answer_uuid):
+
+            # Überprüfen, ob eine answer_uuid vorhanden ist
+            if answer_uuid is None:
+                print("ERROR db_tool.delete_answer(answer_uuid):: No answer_uuid given.")
+                return {}
+
+            query = ("delete from answers where uuid = %s")
+            values = (answer_uuid,)
+            query2 = ("delete from question_answer where answer_uuid = %s")
+            values2 = (answer_uuid,)
+
+            try:
+                with self.conn.cursor() as cur:
+                    cur.execute(query, values)
+                    cur.execute(query2, values2)
+
+                    print("Deleted Answer in DB: %s" % answer_uuid)
+
+                    self.conn.commit()
+
+                    return {}
+
+            except Exception as e:
+                print("ERROR db_tool.delete_answer(answer_uuid):: %s" % e)
+                return {}
+

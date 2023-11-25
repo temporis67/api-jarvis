@@ -95,13 +95,11 @@ def new_question():
 
     title = request.form.get('title')
     if not title:
-        print("ERROR:: app.new_question(): No title provided")
-        return jsonify({'error': 'No title provided'}), 400
+        title = ""
 
     content = request.form.get('content')
     if not content:
-        print("ERROR:: app.new_question(): No content provided")
-        return jsonify({'error': 'No content provided'}), 400
+        content = ""
 
     try:
         question = my_db.new_question(user_uuid=user_uuid, title=title, content=content)
@@ -256,9 +254,29 @@ def update_answer():
         # Hier ein geeignetes Logging-Framework verwenden
         return jsonify({'error': 'Internal server error'}), 500
 
+@app.route('/api/delete_answer', methods=['POST', 'GET'])
+@cross_origin()
+def delete_answer():
+    if request.method != 'POST':
+        return jsonify({'error': 'Only POST method is allowed'}), 405
+
+    answer_uuid = request.form.get('answer_uuid')
+    if not answer_uuid:
+        print("ERROR:: app.delete_answer(): No answer_uuid provided")
+        return jsonify({'error': 'No answer_uuid provided'}), 400
+
+    try:
+        answer = my_db.delete_answer(answer_uuid=answer_uuid)
+        print("app.delete_answer() Success %s" % answer_uuid)
+        return jsonify(answer), 200
+    except Exception as e:
+        print("ERROR:: app.delete_answer(): %s" % e)
+        # Hier ein geeignetes Logging-Framework verwenden
+        return jsonify({'error': 'Internal server error'}), 500
+
+
 #
 # Start App
 #
-
 if __name__ == '__main__':
     app.run()
