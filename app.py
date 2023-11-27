@@ -1,3 +1,5 @@
+import json
+
 from flask import Flask, render_template, request, jsonify
 from flask_cors import CORS, cross_origin
 
@@ -5,13 +7,17 @@ from flask_cors import CORS, cross_origin
 from db.db_tool import DB
 from definitions.user import User
 from definitions.question import Question
+from definitions.answer import Answer
+from jarvis.jarvis import Jarvis
 from pprint import pprint
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'vnkdjnfjknfl1232#'
 app.config['DEBUG'] = 'True'
 
+my_jarvis = Jarvis()
 my_db = DB()
+
 CORS(app)
 
 
@@ -21,6 +27,75 @@ CORS(app)
 @app.route('/')
 def index():  # put application's code here
     return render_template('index.html')
+
+#
+# Handling Queries to LLM
+#
+@app.route('/api/ask', methods=['POST', 'GET'])
+@cross_origin()
+def ask():
+    print("\n app.ask() Start")
+
+    if request.method != 'POST':
+        return jsonify({'error': 'Only POST method is allowed'}), 405
+
+    model_string = request.form.get('model')
+    if not model_string or str(model_string) == 'null':
+        print("ERROR:: app.ask(): No model provided")
+        return jsonify({'error': 'No model provided'}), 400
+    model = json.loads(model_string)
+    # print("app.ask() model: %s" % model)
+    # print("app.ask() model prompt: %s" % model['default_prompt'])
+
+    user_uuid = request.form.get('user_uuid')
+    if not user_uuid or str(user_uuid) == 'null':
+        print("ERROR:: app.ask(): No user_uuid provided")
+        return jsonify({'error': 'No user_uuid provided'}), 400
+
+    question_uuid = request.form.get('question_uuid')
+    if not question_uuid or str(question_uuid) == 'null':
+        print("ERROR:: app.ask(): No question_uuid provided")
+        return jsonify({'error': 'No question_uuid provided'}), 400
+
+    answer_string = request.form.get('answer')
+    if not answer_string or str(answer_string) == 'null':
+        print("ERROR:: app.ask(): No answer provided")
+        return jsonify({'error': 'No answer provided'}), 400
+    print("app.ask() answer_string: %s" % answer_string)
+
+    answer = json.loads(answer_string)
+
+    if answer['uuid'] == "":
+        print("app.ask() answer uuid is empty")
+        answer['uuid'] = my_db.new_answer(user_uuid=user_uuid, question_uuid=question_uuid)['uuid']
+
+    print("app.ask() answer uuid: %s" % answer['uuid'])
+
+
+    prompt = request.form.get('prompt')
+    if not prompt or str(prompt) == 'null':
+        print("ERROR:: app.ask(): No prompt provided")
+        return jsonify({'error': 'No prompt provided'}), 400
+
+    try:
+        # print("app.ask() user_uuid: %s" % user_uuid)
+        # print("app.ask() question: %s" % question)
+        #
+        answer_text = my_jarvis.ask(prompt=prompt)
+        print("app.ask() Success - answer: #%s#" % answer_text)
+        answer['title'] = answer_text[:100]   # get short title from llm.
+        answer['content'] = answer_text
+
+        my_db.update_answer(answer_uuid=answer['uuid'], title=answer['title'], content=answer['content'])
+
+        print("app.ask() Success:: %s" % answer)
+        return jsonify(answer), 200
+    except Exception as e:
+        print("ERROR:: app.ask(): %s" % e)
+        # Hier ein geeignetes Logging-Framework verwenden
+        return jsonify({'error': 'Internal server error'}), 500
+
+
 
 
 #
@@ -243,8 +318,8 @@ def update_answer():
 
     content = request.form.get('content')
     if not content:
-        print("ERROR:: app.update_answer(): No content provided")
-        return jsonify({'error': 'No content provided'}), 400
+        print("Warning:: app.update_answer(): No content provided")
+        # return jsonify({'error': 'No content provided'}), 400
 
     try:
         answer = my_db.update_answer(answer_uuid=answer_uuid, title=title, content=content)

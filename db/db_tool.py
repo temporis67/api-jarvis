@@ -61,14 +61,40 @@ class DB:
                 if res:
                     user.uuid, user.name, user.email, user.password = res
                     # Log successful operation
+                    print("execute_query() - user found %s" % user.uuid)
                     return user
                 else:
-                    # Handle user not found or insert new user
-                    pass
+                    # Handle insert new user
+                    return self.insert_user(user)
 
         except Exception as e:
             # Log exception
             print("execute_query() - %s" % e)
+            pass
+
+    def insert_user(self, user):
+
+        print("insert_user() - user: %s" % user)
+        query = "INSERT INTO users (uuid, username, email, password) VALUES (DEFAULT, %s, %s, %s) RETURNING uuid"
+        values = (user.name, user.email, user.password)
+
+        try:
+            with self.conn.cursor() as cur:
+                cur.execute(query, values)
+                res = cur.fetchone()
+
+                if res:
+                    user.uuid = res[0]
+                    # Log successful operation
+                    return user
+                else:
+                    # Log error or raise an exception
+                    print("insert_user() - no res returned")
+                    pass
+
+        except Exception as e:
+            # Log exception
+            print("insert_user() - %s" % e)
             pass
 
     #
@@ -294,6 +320,11 @@ class DB:
         if answer_uuid is None:
             print("ERROR db_tool.update_answer(answer_uuid):: No answer_uuid given.")
             return {}
+
+        if title is None:
+            title = ""
+        if content is None:
+            content = ""
 
         query = ("update answers set title = %s, content = %s, date_updated = DEFAULT where uuid = %s RETURNING "
                  "date_updated")
