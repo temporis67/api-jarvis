@@ -55,6 +55,12 @@ def ask():
     model = json.loads(model_string)
     # print("app.ask() model: %s" % model)
     # print("app.ask() model prompt: %s" % model['default_prompt'])
+    if 'model_label' in model:
+        model_name = model['model_label'][:8]
+        model_uuid = model['uuid']
+    else:
+        model_name = "default"
+        model_uuid = ""
 
     user_uuid = request.form.get('user_uuid')
     if not user_uuid or str(user_uuid) == 'null':
@@ -100,6 +106,8 @@ def ask():
         answer['title'] = answer_text[:100]   # get short title from llm.
         answer['content'] = answer_text
         answer['time_elapsed'] = str(time_elapsed)
+        answer['creator'] = model_uuid
+        answer['username'] = model_name
 
         my_db.update_answer(answer_uuid=answer['uuid'], title=answer['title'], content=answer['content'], time_elapsed=time_elapsed)
 

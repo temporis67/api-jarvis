@@ -352,7 +352,16 @@ class DB:
                 "update answers set title = %s, content = %s, date_updated = DEFAULT,"
                 " time_elapsed = %s where uuid = %s RETURNING "
                 "date_updated")
-            values = (title, content, time_elapsed, answer_uuid)
+
+            # Umwandlung der Sekunden in Stunden, Minuten, Sekunden und Mikrosekunden
+            hours, remainder = divmod(time_elapsed, 3600)
+            minutes, seconds = divmod(remainder, 60)
+            seconds, microseconds = divmod(seconds, 1)
+
+            # Konvertierung in ein time-Objekt
+            time_value = datetime.time(int(hours), int(minutes), int(seconds), int(microseconds * 1_000_000))
+
+            values = (title, content, time_value, answer_uuid)
 
         try:
             with self.conn.cursor() as cur:
