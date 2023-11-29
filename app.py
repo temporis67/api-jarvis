@@ -250,8 +250,9 @@ def update_question():
 
     content = question['content']
     if not content:
-        print("ERROR:: app.update_question(): No content provided")
-        return jsonify({'error': 'No content provided'}), 400
+        question['content'] = ""
+        # print("ERROR:: app.update_question(): No content provided")
+        # return jsonify({'error': 'No content provided'}), 400
 
     try:
         print("go for DB update")
@@ -301,16 +302,16 @@ def get_answers():
 
     question_uuid = request.form.get('question_uuid')
     if not question_uuid or str(question_uuid) == 'null':
-        print("ERROR:: app.fetch_answers(): No question_uuid provided")
+        print("ERROR:: app.get_answers(): No question_uuid provided")
         return jsonify({'error': 'No question_uuid provided'}), 400
 
     try:
-        print("app.fetch_answers() question_uuid: %s" % question_uuid)
+        print("app.get_answers() question_uuid: %s" % question_uuid)
         answers = my_db.get_answers(question_uuid=question_uuid)
-        print("app.fetch_answers() Success - %s answers found" % len(answers))
+        print("app.get_answers() Success - %s answers found" % len(answers))
         return jsonify(answers), 200
     except Exception as e:
-        print("ERROR:: app.fetch_answers(): %s" % e)
+        print("ERROR:: app.get_answers(): %s" % e)
         # Hier ein geeignetes Logging-Framework verwenden
         return jsonify({'error': 'Internal server error'}), 500
 

@@ -123,7 +123,7 @@ class DB:
 
                 questions = {}
                 for qu in res:
-                    print("db_tool.get_questions(user_uuid):: qu: %s" % qu[4])
+                    # print("db_tool.get_questions(user_uuid):: qu: %s" % qu[4])
 
                     date_created = qu[3]
                     date_updated = qu[4]
