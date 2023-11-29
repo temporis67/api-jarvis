@@ -1,5 +1,6 @@
 #
 # Class to bundle all storage operations
+import datetime
 
 import psycopg2
 from definitions.user import User
@@ -112,7 +113,7 @@ class DB:
         query = ("SELECT qu.question_uuid, q.title, q.content, q.date_created, q.date_updated "
                  "FROM user_question AS qu "
                  "JOIN questions AS q ON qu.question_uuid = q.uuid "
-                 "WHERE qu.user_uuid = %s")
+                 "WHERE qu.user_uuid = %s ORDER BY q.date_updated DESC")
         values = (user_uuid,)
 
         try:
@@ -122,12 +123,18 @@ class DB:
 
                 questions = {}
                 for qu in res:
+                    print("db_tool.get_questions(user_uuid):: qu: %s" % qu[4])
+
+                    date_created = qu[3]
+                    date_updated = qu[4]
+
                     questions[qu[0]] = {
                         'uuid': qu[0],
                         'title': qu[1],
                         'content': qu[2],
-                        'date_created': str(qu[3]),
-                        'date_updated': str(qu[4])
+
+                        'date_created': date_created,
+                        'date_updated': date_updated,
                     }
 
                 return questions
@@ -153,12 +160,16 @@ class DB:
                 cur.execute(query, values)
                 res = cur.fetchone()
 
+                date_created = res[1]
+
+                date_updated = res[2]
+
                 question = {
                     'uuid': res[0],
                     'title': title,
                     'content': content,
-                    'date_created': str(res[1]),
-                    'date_updated': str(res[2])
+                    'date_created': date_created,
+                    'date_updated': date_updated,
                 }
 
                 print("New Question in DB: %s" % str(question))
@@ -176,28 +187,26 @@ class DB:
             print("ERROR db_tool.new_question(user_uuid):: %s" % e)
             return {}
 
-    def update_question(self, user_uuid, question_uuid, title, content):
+    def update_question(self, question=None):
 
         # Überprüfen, ob eine user_uuid vorhanden ist
-        if user_uuid is None:
-            print("ERROR db_tool.update_question(user_uuid):: No user_uuid given.")
+        if question is None:
+            print("ERROR db_tool.update_question(question):: No question given.")
+            return {}
+        if question['uuid'] is None or question['uuid'] == "" or question['title'] is None or question['title'] == "":
+            print("ERROR db_tool.update_question(question):: No question content given.")
             return {}
 
-        query = ("update questions set title = %s, content = %s, date_updated = DEFAULT where uuid = %s RETURNING "
-                 "date_updated")
-        values = (title, content, question_uuid)
+        query = "update questions set title = %s, content = %s, date_updated = now() where uuid = %s"
+        values = (question['title'], question['content'], question['uuid'])
+        print("db_tool.update_question(question):: query: %s, values: %s" % (query, values))
 
         try:
             with self.conn.cursor() as cur:
                 cur.execute(query, values)
-                res = cur.fetchone()
 
-                question = {
-                    'uuid': question_uuid,
-                    'title': title,
-                    'content': content,
-                    'date_updated': str(res[0])
-                }
+                formatted_time = datetime.datetime.now()
+                question["date_updated"] = formatted_time
 
                 print("Updated Question in DB: %s" % str(question))
 
@@ -277,6 +286,10 @@ class DB:
             self.conn.rollback()
             return {}
 
+    def format_timestamp(self, timestamp):
+        """ Wandelt einen Unix-Zeitstempel in das Format 'DD.MM.YY HH:MM' um. """
+        return datetime.fromtimestamp(timestamp).strftime("%d.%m.%y %H:%M")
+
     def new_answer(self, user_uuid, question_uuid):
 
         if question_uuid is None or user_uuid is None:
@@ -292,12 +305,16 @@ class DB:
                 cur.execute(query, values)
                 res = cur.fetchone()
 
+                date_created = res[1]
+
+                date_updated = res[2]
+
                 answer = {
                     'uuid': res[0],
                     'creator': user_uuid,
                     'question': question_uuid,
-                    'date_created': str(res[1]),
-                    'date_updated': str(res[2])
+                    'date_created': date_created,
+                    'date_updated': date_updated,
                 }
 
                 print("New Answer in DB: %s" % str(answer))
@@ -314,7 +331,7 @@ class DB:
             print("ERROR db_tool.new_answer(user_uuid, question_uuid):: %s" % e)
             return {}
 
-    def update_answer(self, answer_uuid, title, content):
+    def update_answer(self, answer_uuid, title, content, time_elapsed=None):
 
         # Überprüfen, ob eine answer_uuid vorhanden ist
         if answer_uuid is None:
@@ -326,9 +343,16 @@ class DB:
         if content is None:
             content = ""
 
-        query = ("update answers set title = %s, content = %s, date_updated = DEFAULT where uuid = %s RETURNING "
-                 "date_updated")
-        values = (title, content, answer_uuid)
+        if time_elapsed is None:
+            query = ("update answers set title = %s, content = %s, date_updated = DEFAULT where uuid = %s RETURNING "
+                     "date_updated")
+            values = (title, content, answer_uuid)
+        else:
+            query = (
+                "update answers set title = %s, content = %s, date_updated = DEFAULT,"
+                " time_elapsed = %s where uuid = %s RETURNING "
+                "date_updated")
+            values = (title, content, time_elapsed, answer_uuid)
 
         try:
             with self.conn.cursor() as cur:
@@ -339,7 +363,8 @@ class DB:
                     'uuid': answer_uuid,
                     'title': title,
                     'content': content,
-                    'date_updated': str(res[0])
+                    'date_updated': str(res[0]),
+                    'time_elapsed': time_elapsed,
                 }
 
                 print("Updated Answer in DB: %s" % str(answer))
@@ -354,28 +379,27 @@ class DB:
 
     def delete_answer(self, answer_uuid):
 
-            # Überprüfen, ob eine answer_uuid vorhanden ist
-            if answer_uuid is None:
-                print("ERROR db_tool.delete_answer(answer_uuid):: No answer_uuid given.")
+        # Überprüfen, ob eine answer_uuid vorhanden ist
+        if answer_uuid is None:
+            print("ERROR db_tool.delete_answer(answer_uuid):: No answer_uuid given.")
+            return {}
+
+        query = ("delete from answers where uuid = %s")
+        values = (answer_uuid,)
+        query2 = ("delete from question_answer where answer_uuid = %s")
+        values2 = (answer_uuid,)
+
+        try:
+            with self.conn.cursor() as cur:
+                cur.execute(query, values)
+                cur.execute(query2, values2)
+
+                print("Deleted Answer in DB: %s" % answer_uuid)
+
+                self.conn.commit()
+
                 return {}
 
-            query = ("delete from answers where uuid = %s")
-            values = (answer_uuid,)
-            query2 = ("delete from question_answer where answer_uuid = %s")
-            values2 = (answer_uuid,)
-
-            try:
-                with self.conn.cursor() as cur:
-                    cur.execute(query, values)
-                    cur.execute(query2, values2)
-
-                    print("Deleted Answer in DB: %s" % answer_uuid)
-
-                    self.conn.commit()
-
-                    return {}
-
-            except Exception as e:
-                print("ERROR db_tool.delete_answer(answer_uuid):: %s" % e)
-                return {}
-
+        except Exception as e:
+            print("ERROR db_tool.delete_answer(answer_uuid):: %s" % e)
+            return {}
