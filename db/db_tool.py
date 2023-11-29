@@ -412,3 +412,94 @@ class DB:
         except Exception as e:
             print("ERROR db_tool.delete_answer(answer_uuid):: %s" % e)
             return {}
+
+    # Let's write get_models, add_model, update_model, delete_model
+    def get_models(self):
+        query = ("SELECT * FROM models")
+        values = ()
+
+        try:
+            with self.conn.cursor() as cur:
+                cur.execute(query, values)
+                res = cur.fetchall()
+
+                models = {}
+                for row in res:
+                    model = {
+                        'uuid': row[0],
+                        'model_filename': row[1],
+                        'model_label': row[2],
+                        'model_type': row[3],
+                        'default_prompt': row[4],
+                        'default_max_length': row[5],
+                    }
+                    models[row[0]] = model
+
+                return models
+
+        except Exception as e:
+            print("ERROR db_tool.get_models():: %s" % e)
+            self.conn.rollback()
+            return {}
+
+    # def add_model(self, model):
+    #     query = ("INSERT INTO models (uuid, model_filename, model_label, model_type, default_prompt, default_max_length) VALUES (DEFAULT, %s, %s, %s, %s, %s) RETURNING uuid")
+    #     values = (model.model_filename, model.model_label, model.model_type, model.default_prompt, model.default_max_length)
+    #
+    #     try:
+    #         with self.conn.cursor() as cur:
+    #             cur.execute(query, values)
+    #             res = cur.fetchone()
+    #
+    #             if res:
+    #                 model.uuid = res[0]
+    #                 # Log successful operation
+    #                 return model
+    #             else:
+    #                 # Log error or raise an exception
+    #                 print("add_model() - no res returned")
+    #                 pass
+    #
+    #     except Exception as e:
+    #         # Log exception
+    #         print("add_model() - %s" % e)
+    #         pass
+
+    def update_model(self, model):
+        query = "UPDATE models SET model_filename = %s, model_label = %s,"\
+                " model_type = %s, default_prompt = %s, default_max_length = %s WHERE uuid = %s"
+        values = (model['model_filename'], model['model_label'], model['model_type'],
+                  model['default_prompt'],
+                  model['default_max_length'], model['uuid'])
+
+        try:
+            with self.conn.cursor() as cur:
+                cur.execute(query, values)
+
+                print("Updated Model in DB: %s" % str(model))
+
+                self.conn.commit()
+
+                return model
+
+        except Exception as e:
+            print("ERROR db_tool.update_model(model):: %s" % e)
+            return {}
+
+    def delete_model(self, model_uuid):
+        query = ("DELETE FROM models WHERE uuid = %s")
+        values = (model_uuid,)
+
+        try:
+            with self.conn.cursor() as cur:
+                cur.execute(query, values)
+
+                print("Deleted Model in DB: %s" % model_uuid)
+
+                self.conn.commit()
+
+                return {}
+
+        except Exception as e:
+            print("ERROR db_tool.delete_model(model_uuid):: %s" % e)
+            return {}

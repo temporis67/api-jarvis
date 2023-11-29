@@ -9,7 +9,7 @@ model_name = "spicyboros-13b-2.2.Q5_K_M.gguf"
 # model_name = "Llama-2-13b-chat-german-GGUF.q5_K_M.bin"
 
 # "ON" or "OFF
-LOAD_LLM = "ON"
+LOAD_LLM = "OFF"
 
 
 class Jarvis:

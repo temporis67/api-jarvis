@@ -392,6 +392,99 @@ def delete_answer():
         return jsonify({'error': 'Internal server error'}), 500
 
 
+@app.route('/api/get_models', methods=['POST', 'GET'])
+@cross_origin()
+def get_models():
+    print("app.get_models() Start")
+    if request.method != 'POST':
+        return jsonify({'error': 'Only POST method is allowed'}), 405
+
+    try:
+        models = my_db.get_models()
+        print("app.get_models() Success - %s models found" % len(models))
+        return jsonify(models), 200
+    except Exception as e:
+        print("ERROR:: app.get_models(): %s" % e)
+        # Hier ein geeignetes Logging-Framework verwenden
+        return jsonify({'error': 'Internal server error'}), 500
+
+@app.route('/api/add_model', methods=['POST', 'GET'])
+@cross_origin()
+def add_model():
+    if request.method != 'POST':
+        return jsonify({'error': 'Only POST method is allowed'}), 405
+
+    model_string = request.form.get('model')
+    if not model_string or str(model_string) == 'null':
+        print("ERROR:: app.add_model(): No model provided")
+        return jsonify({'error': 'No model provided'}), 400
+
+    try:
+        model = json.loads(model_string)
+        print("app.add_model() model: %s" % model['uuid'])
+    except json.JSONDecodeError:
+        print("ERROR:: app.add_model(): Invalid JSON for model")
+        return jsonify({'error': 'Invalid JSON format for model'}), 400
+
+    try:
+        model = my_db.add_model(model=model)
+        print("app.add_model() Success %s" % model['uuid'])
+        return jsonify(model), 200
+    except Exception as e:
+        print("ERROR:: app.add_model(): %s" % e)
+        # Hier ein geeignetes Logging-Framework verwenden
+        return jsonify({'error': 'Internal server error'}), 500
+
+@app.route('/api/update_model', methods=['POST', 'GET'])
+@cross_origin()
+def update_model():
+    if request.method != 'POST':
+        return jsonify({'error': 'Only POST method is allowed'}), 405
+
+    model_string = request.form.get('model')
+    if not model_string or str(model_string) == 'null':
+        print("ERROR:: app.update_model(): No model provided")
+        return jsonify({'error': 'No model provided'}), 400
+
+    try:
+        model = json.loads(model_string)
+        print("app.update_model() model: %s" % model['uuid'])
+    except json.JSONDecodeError:
+        print("ERROR:: app.update_model(): Invalid JSON for model")
+        return jsonify({'error': 'Invalid JSON format for model'}), 400
+
+    try:
+        model = my_db.update_model(model=model)
+        print("app.update_model() Success %s" % model['uuid'])
+        return jsonify(model), 200
+    except Exception as e:
+        print("ERROR:: app.update_model(): %s" % e)
+        print("ERROR:: app.update_model(): %s" % model)
+        # Hier ein geeignetes Logging-Framework verwenden
+        return jsonify({'error': 'Internal server error'}), 500
+
+@app.route('/api/delete_model', methods=['POST', 'GET'])
+@cross_origin()
+def delete_model():
+    if request.method != 'POST':
+        return jsonify({'error': 'Only POST method is allowed'}), 405
+
+    model_uuid = request.form.get('model_uuid')
+    if not model_uuid:
+        print("ERROR:: app.delete_model(): No model_uuid provided")
+        return jsonify({'error': 'No model_uuid provided'}), 400
+
+    try:
+        model = my_db.delete_model(model_uuid=model_uuid)
+        print("app.delete_model() Success %s" % model_uuid)
+        return jsonify(model), 200
+    except Exception as e:
+        print("ERROR:: app.delete_model(): %s" % e)
+        # Hier ein geeignetes Logging-Framework verwenden
+        return jsonify({'error': 'Internal server error'}), 500
+
+
+
 #
 # Start App
 #
