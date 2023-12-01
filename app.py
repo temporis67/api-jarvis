@@ -68,6 +68,12 @@ def ask():
         is_working = False
         return jsonify({'error': 'No user_uuid provided'}), 400
 
+    creator_uuid = request.form.get('creator_uuid')
+    if not creator_uuid or str(creator_uuid) == 'null' or str(creator_uuid) == 'undefined':
+        print("ERROR:: app.ask(): No creator_uuid provided")
+        is_working = False
+        return jsonify({'error': 'No creator_uuid provided'}), 400
+
     question_uuid = request.form.get('question_uuid')
     if not question_uuid or str(question_uuid) == 'null':
         print("ERROR:: app.ask(): No question_uuid provided")
@@ -84,10 +90,18 @@ def ask():
     answer = json.loads(answer_string)
 
     if 'uuid' in answer and answer['uuid'] != "":
+        # updating existing answer
         print("app.ask() answer uuid is full")
     else:
+        # creating new answer
         print("app.ask() answer uuid is empty, create new one")
-        answer['uuid'] = my_db.new_answer(user_uuid=user_uuid, question_uuid=question_uuid)['uuid']
+        res = my_db.new_answer(user_uuid=user_uuid, creator_uuid=creator_uuid, question_uuid=question_uuid)
+        if 'uuid' in res:
+            answer['uuid'] = res['uuid']
+        else:
+            print("ERROR:: app.ask(): No answer_uuid could be created")
+            is_working = False
+            return jsonify({'error': 'No answer_uuid could be created'}), 400
 
     print("app.ask() answer uuid: %s" % answer['uuid'])
 
@@ -97,15 +111,27 @@ def ask():
         is_working = False
         return jsonify({'error': 'No prompt provided'}), 400
 
+    question = request.form.get('question')
+    if not question or str(question) == 'null':
+        print("ERROR:: app.ask(): No question provided")
+        is_working = False
+        return jsonify({'error': 'No question provided'}), 400
+
+    context = request.form.get('context')
+    if not context or str(context) == 'null':
+        print("ERROR:: app.ask(): No context provided")
+        is_working = False
+        return jsonify({'error': 'No context provided'}), 400
+
     try:
         # print("app.ask() user_uuid: %s" % user_uuid)
         # print("app.ask() question: %s" % question)
         #
-        [answer_text, time_elapsed] = my_jarvis.ask(prompt=prompt)
+        [answer_text, time_elapsed] = my_jarvis.ask(model=model, prompt=prompt, context=context, question=question)
         print("app.ask() Success - answer: #%s#" % answer_text)
         answer['title'] = answer_text[:100]   # get short title from llm.
         answer['content'] = answer_text
-        answer['time_elapsed'] = str(time_elapsed)
+        answer['time_elapsed'] = time_elapsed
         answer['creator'] = model_uuid
         answer['username'] = model_name
 
@@ -309,6 +335,7 @@ def get_answers():
         print("app.get_answers() question_uuid: %s" % question_uuid)
         answers = my_db.get_answers(question_uuid=question_uuid)
         print("app.get_answers() Success - %s answers found" % len(answers))
+        print("TIME ELAPSED: %s" % answers)
         return jsonify(answers), 200
     except Exception as e:
         print("ERROR:: app.get_answers(): %s" % e)
@@ -327,13 +354,18 @@ def new_answer():
         print("ERROR:: app.new_answer(): No user_uuid provided")
         return jsonify({'error': 'No user_uuid provided'}), 400
 
+    creator_uuid = request.form.get('creator_uuid')
+    if not creator_uuid or str(creator_uuid) == 'null' or str(creator_uuid) == 'undefined':
+        print("ERROR:: app.new_answer(): No creator_uuid provided")
+        return jsonify({'error': 'No creator_uuid provided'}), 400
+
     question_uuid = request.form.get('question_uuid')
     if not question_uuid:
         print("ERROR:: app.new_answer(): No question_uuid provided")
         return jsonify({'error': 'No question_uuid provided'}), 400
 
     try:
-        answer = my_db.new_answer(user_uuid=user_uuid, question_uuid=question_uuid)
+        answer = my_db.new_answer(user_uuid=user_uuid, creator_uuid=creator_uuid, question_uuid=question_uuid)
         print("app.new_answer() Success")
         pprint(answer)
         return jsonify(answer), 200

@@ -110,10 +110,13 @@ class DB:
             print("db_tool.get_questions(user_uuid):: user_uuid: %s" % user_uuid)
 
         # Parametrisierte Abfrage verwenden
-        query = ("SELECT qu.question_uuid, q.title, q.content, q.date_created, q.date_updated "
-                 "FROM user_question AS qu "
-                 "JOIN questions AS q ON qu.question_uuid = q.uuid "
-                 "WHERE qu.user_uuid = %s ORDER BY q.date_updated DESC")
+        query = (
+            "SELECT qu.question_uuid, q.title, q.content, q.date_created, q.date_updated, u.username "
+            "FROM user_question AS qu "
+            "JOIN questions AS q ON qu.question_uuid = q.uuid "
+            "JOIN users AS u ON qu.user_uuid = u.uuid "
+            "WHERE qu.user_uuid = %s ORDER BY q.date_updated DESC"
+        )
         values = (user_uuid,)
 
         try:
@@ -135,6 +138,8 @@ class DB:
 
                         'date_created': date_created,
                         'date_updated': date_updated,
+                        'user_uuid': user_uuid,
+                        'user_name': qu[5],
                     }
 
                 return questions
@@ -159,7 +164,7 @@ class DB:
             with self.conn.cursor() as cur:
                 cur.execute(query, values)
                 res = cur.fetchone()
-
+                print("Insert OK")
                 date_created = res[1]
 
                 date_updated = res[2]
@@ -185,6 +190,7 @@ class DB:
 
         except Exception as e:
             print("ERROR db_tool.new_question(user_uuid):: %s" % e)
+            self.conn.rollback()
             return {}
 
     def update_question(self, question=None):
@@ -258,12 +264,32 @@ class DB:
             print("Start db_tool.get_answers(question_uuid):: question_uuid: %s" % question_uuid)
 
         # Parametrisierte Abfrage verwenden
-        query = ("SELECT answers.*, users.username, users.uuid as user_uuid "
-                 "FROM answers "
-                 "JOIN question_answer ON answers.uuid = question_answer.answer_uuid "
-                 "JOIN user_question ON question_answer.question_uuid = user_question.question_uuid "
-                 "JOIN users ON user_question.user_uuid = users.uuid "
-                 "WHERE question_answer.question_uuid = %s")
+        query = ('SELECT '
+                 '    answers.*,'
+                 ' ROUND('
+                 ' EXTRACT(HOUR FROM answers.time_elapsed) * 3600 + ' 
+                 ' EXTRACT(MINUTE FROM answers.time_elapsed) * 60 + ' 
+                 ' EXTRACT(SECOND FROM answers.time_elapsed),'
+                 ' 1) AS seconds, '
+                 ' users.username AS user_name, '
+                 '    CASE'
+                 '        WHEN users.uuid IS NOT NULL THEN users.username '
+                 '        WHEN models.uuid IS NOT NULL THEN models.model_label '
+                 '    END AS creator_name '
+                 'FROM '
+                 '    answers '
+                 'JOIN '
+                 '    question_answer ON answers.uuid = question_answer.answer_uuid '
+                 'JOIN '
+                 '    user_question ON question_answer.question_uuid = user_question.question_uuid '
+                 'LEFT JOIN '
+                 '    users ON answers.creator_uuid = users.uuid '
+                 'LEFT JOIN '
+                 '    models ON answers.creator_uuid = models.uuid '
+                 'WHERE '
+                 '    question_answer.question_uuid = %s'
+
+                 )
         values = (question_uuid,)
 
         try:
@@ -290,20 +316,34 @@ class DB:
         """ Wandelt einen Unix-Zeitstempel in das Format 'DD.MM.YY HH:MM' um. """
         return datetime.fromtimestamp(timestamp).strftime("%d.%m.%y %H:%M")
 
-    def new_answer(self, user_uuid, question_uuid):
+    def new_answer(self, user_uuid, creator_uuid, question_uuid):
 
-        if question_uuid is None or user_uuid is None:
-            print("ERROR db_tool.new_answer(user_uuid, question_uuid):: No user/question_uuid given.")
-            return {}
+        for p in [user_uuid, creator_uuid, question_uuid]:
+            if p is None or p == "" or p == "None" or p == "null" or p == "NULL" or p == "undefined":
+                print("ERROR:: db_tool.new_answer() Missing Parameter - %s" % p)
+                return {}
+
         query = (
-            "insert into answers (uuid, creator, question) values (DEFAULT, %s, %s) RETURNING uuid, date_created, "
+            "insert into answers (uuid, creator_uuid, user_uuid, question) values (DEFAULT, %s, %s, %s) "
+            "RETURNING uuid, date_created, "
             "date_updated")
-        values = (user_uuid, question_uuid)
+        values = (creator_uuid, user_uuid, question_uuid)
+        print(" query: %s" % query)
+        print(" values: %s" % str(values))
 
         try:
             with self.conn.cursor() as cur:
-                cur.execute(query, values)
-                res = cur.fetchone()
+
+                try:
+                    cur.execute(query, values)
+                    res = cur.fetchone()
+                except Exception as e:
+                    print(f"Exception Type: {type(e)}")
+                    print(f"Error Message: {e}")
+                    self.conn.rollback()
+                    return {}
+
+                print("Insert OK")
 
                 date_created = res[1]
 
@@ -311,7 +351,8 @@ class DB:
 
                 answer = {
                     'uuid': res[0],
-                    'creator': user_uuid,
+                    'creator_uuid': creator_uuid,
+                    'user_uuid': user_uuid,
                     'question': question_uuid,
                     'date_created': date_created,
                     'date_updated': date_updated,
@@ -319,8 +360,9 @@ class DB:
 
                 print("New Answer in DB: %s" % str(answer))
 
-                update_question_query = ("insert into question_answer (question_uuid, answer_uuid) values (%s, %s)")
+                update_question_query = "insert into question_answer (question_uuid, answer_uuid) values (%s, %s)"
                 update_question_values = (question_uuid, answer['uuid'])
+
                 cur.execute(update_question_query, update_question_values)
 
                 self.conn.commit()
@@ -328,7 +370,9 @@ class DB:
                 return answer
 
         except Exception as e:
-            print("ERROR db_tool.new_answer(user_uuid, question_uuid):: %s" % e)
+            print("ERROR db_tool.new_answer(user_uuid, creator_id, question_uuid):: %s" % e)
+            print(f"Exception Type: {type(e)}")
+            self.conn.rollback()
             return {}
 
     def update_answer(self, answer_uuid, title, content, time_elapsed=None):
