@@ -119,10 +119,10 @@ def ask():
 
     context = request.form.get('context')
     if not context or str(context) == 'null':
-        print("ERROR:: app.ask(): No context provided")
-        is_working = False
-        return jsonify({'error': 'No context provided'}), 400
-
+        print("Warning:: app.ask(): No context provided")
+        # is_working = False
+        # return jsonify({'error': 'No context provided'}), 400
+        pass
     try:
         # print("app.ask() user_uuid: %s" % user_uuid)
         # print("app.ask() question: %s" % question)

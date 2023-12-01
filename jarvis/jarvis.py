@@ -3,6 +3,7 @@ import time
 from dotenv import load_dotenv
 import os
 from openai import OpenAI
+import openai
 
 # Lade die Umgebungsvariablen aus der .env-Datei
 load_dotenv()
@@ -15,7 +16,7 @@ model_name = "spicyboros-13b-2.2.Q5_K_M.gguf"
 # model_name = "Llama-2-13b-chat-german-GGUF.q5_K_M.bin"
 
 # "ON" or "OFF
-LOAD_LLM = "OFF"
+LOAD_LLM = "ON"
 
 class Jarvis:
     llm = None
@@ -35,10 +36,31 @@ class Jarvis:
         elif model['model_type'] == "remote":
             return self.ask_remote_model(model=model, prompt=prompt, context=context, question=question)
 
-    def ask_openai_model(self, model=None, prompt=None, context=None, question=None):
+
+    def ask_davinci_model(self, model=None, prompt=None, context=None, question=None):
 
         time_start = time.time()
-        print("ask_openai_model() model: %s" % (model['model_filename']))
+        print("ask_davinci_model() model: %s" % (model['model_filename']))
+
+        prompt.format(context=context, question=question)
+
+        print("ask_davinci_model() prompt: %s" % prompt)
+
+        completion = self.openai_client.completions.create(model="davinci", prompt=prompt, max_tokens=256, )
+
+        answer = completion.choices[0].text
+        time_query = time.time() - time_start
+
+        print("ask_openai_model() answer: %s" % answer)
+        print("Query executed in %s seconds" % time_query)
+
+        return [answer, time_query]
+
+
+    def ask_gpt_model(self, model=None, prompt=None, context=None, question=None):
+
+        time_start = time.time()
+        print("ask_gpt_model() model: %s" % (model['model_filename']))
 
         completion = self.openai_client.chat.completions.create(
             model=model['model_filename'],
@@ -64,7 +86,9 @@ class Jarvis:
     def ask_remote_model(self, model=None, prompt=None, context=None, question=None):
         # if model.model_type contains "*gpt*" ignore uppercase then use OpenAI API
         if "gpt" in model['model_filename'].lower():
-            return self.ask_openai_model(model=model, prompt=prompt, context=context, question=question)
+            return self.ask_gpt_model(model=model, prompt=prompt, context=context, question=question)
+        elif "davinci" in model['model_filename'].lower():
+            return self.ask_davinci_model(model=model, prompt=prompt, context=context, question=question)
         else:
             print("ERROR:: Jarvis.ask_remote_model() No valid model specified. %s" % model)
             raise Exception("ERROR:: Jarvis.ask_remote_model() No valid model specified %s." % model)
@@ -124,7 +148,7 @@ class Jarvis:
         # load the OpenAI API
         openai_key = os.getenv('OPENAI_API_KEY')
         openai_org = os.getenv('OPENAI_API_ORG')
-
+        openai.api_key = openai_key # Set API key
         self.openai_client = OpenAI(
             organization=openai_org,
             api_key=openai_key,
