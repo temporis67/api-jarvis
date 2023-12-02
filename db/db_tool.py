@@ -459,7 +459,7 @@ class DB:
 
     # Let's write get_models, add_model, update_model, delete_model
     def get_models(self):
-        query = ("SELECT * FROM models")
+        query = ("SELECT * FROM models ORDER BY model_label ASC")
         values = ()
 
         try:

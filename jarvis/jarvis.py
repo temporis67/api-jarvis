@@ -46,7 +46,7 @@ class Jarvis:
 
         print("ask_davinci_model() prompt: %s" % prompt)
 
-        completion = self.openai_client.completions.create(model="davinci", prompt=prompt, max_tokens=256, )
+        completion = self.openai_client.completions.create(model="davinci", prompt=prompt, max_tokens=100, )
 
         answer = completion.choices[0].text
         time_query = time.time() - time_start
@@ -62,17 +62,27 @@ class Jarvis:
         time_start = time.time()
         print("ask_gpt_model() model: %s" % (model['model_filename']))
 
-        completion = self.openai_client.chat.completions.create(
-            model=model['model_filename'],
-            messages=[
+        messages = [
+            {"role": "system",
+             "content": prompt},
+            {"role": "user",
+             "content": "Berücksichtige folgende Informationen, um die Frage des Benutzers zu beantworten: %s" % context},
+            {"role": "assistant",
+             "content": "Danke, ich werde diese Informationen bei meiner Antwort berücksichtigen."},
+            {"role": "user",
+             "content": "Beantworte folgende Frage: %s" % question},
+        ]
+        if not context or context == "":
+            messages = [
                 {"role": "system",
                  "content": prompt},
                 {"role": "user",
-                 "content": "Berücksichtige folgende Informationen, um die Frage des Benutzers zu beantworten: %s" % context},
-                {"role": "assistant", "content": "Danke, ich werde diese Informationen bei meiner Antwort berücksichtigen."},
-                {"role": "user",
                  "content": "Beantworte folgende Frage: %s" % question},
             ]
+
+        completion = self.openai_client.chat.completions.create(
+            model=model['model_filename'],
+            messages=messages,
         )
 
         answer = completion.choices[0].message.content
