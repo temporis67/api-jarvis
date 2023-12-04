@@ -12,7 +12,7 @@ from jarvis.jarvis import Jarvis
 from pprint import pprint
 
 app = Flask(__name__)
-app.config['SECRET_KEY'] = 'vnkdjnfjknfl123s2#'
+app.config['SECRET_KEY'] = 'vnkdjnfjknflasdf123s2#'
 app.config['DEBUG'] = 'True'
 
 my_jarvis = Jarvis()

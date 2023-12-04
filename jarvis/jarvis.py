@@ -1,9 +1,13 @@
+""" Class to connect to the local and external LLM services"""
+
 from llama_cpp import Llama
 import time
 from dotenv import load_dotenv
 import os
 from openai import OpenAI
 import openai
+
+
 
 # Lade die Umgebungsvariablen aus der .env-Datei
 load_dotenv()
