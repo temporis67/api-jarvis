@@ -1,12 +1,8 @@
-#
-# Class to bundle all storage operations
 import datetime
-
 import psycopg2
 from definitions.user import User
 from definitions.question import Question
 from definitions.answer import Answer
-
 
 class DB:
     conn = None
@@ -111,11 +107,11 @@ class DB:
 
         # Parametrisierte Abfrage verwenden
         query = (
-            "SELECT qu.question_uuid, q.title, q.content, q.date_created, q.date_updated, u.username "
+            "SELECT qu.question_uuid, q.title, q.content, q.date_created, q.date_updated, u.username, qu.rank "
             "FROM user_question AS qu "
             "JOIN questions AS q ON qu.question_uuid = q.uuid "
             "JOIN users AS u ON qu.user_uuid = u.uuid "
-            "WHERE qu.user_uuid = %s ORDER BY q.date_updated DESC"
+            "WHERE qu.user_uuid = %s ORDER BY qu.rank DESC"
         )
         values = (user_uuid,)
 
@@ -140,6 +136,7 @@ class DB:
                         'date_updated': date_updated,
                         'user_uuid': user_uuid,
                         'user_name': qu[5],
+                        'rank': qu[6],
                     }
 
                 return questions
@@ -192,7 +189,32 @@ class DB:
             print("ERROR db_tool.new_question(user_uuid):: %s" % e)
             self.conn.rollback()
             return {}
-
+        
+    def update_question_rank(self, user_uuid=None, question_uuid=None, rank=None):
+        
+        # Überprüfen, ob eine user_uuid vorhanden ist
+        if user_uuid is None or question_uuid is None or rank is None:
+            print("ERROR db_tool.update_question_rank(user_uuid):: No user_uuid given.")
+            return {}
+        
+        query = ("update user_question set rank = %s where user_uuid = %s and question_uuid = %s")
+        values = (rank, user_uuid, question_uuid)
+        print("db_tool.update_question_rank(user_uuid):: query: %s, values: %s" % (query, values))
+        
+        try:
+            with self.conn.cursor() as cur:
+                cur.execute(query, values)
+                
+                print("Updated Question Rank in DB: %s" % str(question_uuid))
+                
+                self.conn.commit()
+                
+                return {}
+            
+        except Exception as e:
+            print("ERROR db_tool.update_question_rank(user_uuid):: %s" % e)
+            return {}
+                        
     def update_question(self, question=None):
 
         # Überprüfen, ob eine user_uuid vorhanden ist
@@ -233,13 +255,22 @@ class DB:
 
         query = ("delete from questions where uuid = %s")
         values = (question_uuid,)
+        
         query2 = ("delete from user_question where question_uuid = %s")
         values2 = (question_uuid,)
+        
+        query3 = ("delete from answers where uuid in (select answer_uuid from question_answer where question_uuid = %s)")
+        values3 = (question_uuid,)
+        
+        query4 = ("delete from question_answer where question_uuid = %s")
+        values4 = (question_uuid,)
 
         try:
             with self.conn.cursor() as cur:
                 cur.execute(query, values)
                 cur.execute(query2, values2)
+                cur.execute(query3, values3)
+                cur.execute(query4, values4)
 
                 print("Deleted Question in DB: %s" % question_uuid)
 
@@ -272,6 +303,7 @@ class DB:
                  ' EXTRACT(SECOND FROM answers.time_elapsed),'
                  ' 1) AS seconds, '
                  ' users.username AS user_name, '
+                 ' question_answer.rank AS rank, '
                  '    CASE'
                  '        WHEN users.uuid IS NOT NULL THEN users.username '
                  '        WHEN models.uuid IS NOT NULL THEN models.model_label '
@@ -287,7 +319,9 @@ class DB:
                  'LEFT JOIN '
                  '    models ON answers.creator_uuid = models.uuid '
                  'WHERE '
-                 '    question_answer.question_uuid = %s'
+                 '    question_answer.question_uuid = %s '
+                 'ORDER BY '
+                 '    question_answer.rank DESC '
 
                  )
         values = (question_uuid,)
@@ -375,6 +409,26 @@ class DB:
             self.conn.rollback()
             return {}
 
+    def update_answer_rank(self, question_uuid=None, answer_uuid=None, rank=None):
+        
+        query = ("update question_answer set rank = %s where question_uuid = %s and answer_uuid = %s")
+        values = (rank, question_uuid, answer_uuid)
+        print("db_tool.update_answer_rank(question_uuid):: query: %s, values: %s" % (query, values))
+        
+        try:
+            with self.conn.cursor() as cur:
+                cur.execute(query, values)
+                
+                print("Updated Answer Rank in DB: %s" % str(answer_uuid))
+                
+                self.conn.commit()
+                
+                return {}
+            
+        except Exception as e:
+            print("ERROR db_tool.update_answer_rank(question_uuid):: %s" % e)
+            return {}
+        
     def update_answer(self, answer_uuid, title, content, time_elapsed=None):
 
         # Überprüfen, ob eine answer_uuid vorhanden ist

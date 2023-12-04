@@ -239,6 +239,39 @@ def new_question():
         return jsonify({'error': 'Internal server error'}), 500
 
 
+@app.route('/api/update_question_rank', methods=['POST', 'GET'])
+@cross_origin()
+def update_question_rank():
+    print("********** app.update_question_rank() Start")
+    if request.method != 'POST':
+        return jsonify({'error': 'Only POST method is allowed'}), 405
+
+    user_uuid = request.form.get('user_uuid')
+    if not user_uuid:
+        print("ERROR:: app.update_question_rank(): No user_uuid provided")
+        return jsonify({'error': 'No user_uuid provided'}), 400
+
+    question_uuid = request.form.get('question_uuid')
+    if not question_uuid:
+        print("ERROR:: app.update_question_rank(): No question_uuid provided")
+        return jsonify({'error': 'No question_uuid provided'}), 400
+
+    rank = request.form.get('rank')
+    if not rank:
+        print("ERROR:: app.update_question_rank(): No rank provided")
+        return jsonify({'error': 'No rank provided'}), 400
+
+    try:
+        question = my_db.update_question_rank(user_uuid=user_uuid, question_uuid=question_uuid, rank=rank)
+        print("app.update_question_rank() Success")
+        pprint(question)
+        return jsonify(question), 200
+    except Exception as e:
+        print("ERROR:: app.update_question_rank(): %s" % e)
+        # Hier ein geeignetes Logging-Framework verwenden
+        return jsonify({'error': 'Internal server error'}), 500
+
+
 @app.route('/api/update_question', methods=['POST', 'GET'])
 @cross_origin()
 def update_question():
@@ -335,7 +368,7 @@ def get_answers():
         print("app.get_answers() question_uuid: %s" % question_uuid)
         answers = my_db.get_answers(question_uuid=question_uuid)
         print("app.get_answers() Success - %s answers found" % len(answers))
-        print("TIME ELAPSED: %s" % answers)
+#        print("TIME ELAPSED: %s" % answers)
         return jsonify(answers), 200
     except Exception as e:
         print("ERROR:: app.get_answers(): %s" % e)
@@ -371,6 +404,38 @@ def new_answer():
         return jsonify(answer), 200
     except Exception as e:
         print("ERROR:: app.new_answer(): %s" % e)
+        # Hier ein geeignetes Logging-Framework verwenden
+        return jsonify({'error': 'Internal server error'}), 500
+
+@app.route('/api/update_answer_rank', methods=['POST', 'GET'])
+@cross_origin()
+def update_answer_rank():
+    # print("app.update_answer_rank() Start")
+    if request.method != 'POST':
+        return jsonify({'error': 'Only POST method is allowed'}), 405
+
+    answer_uuid = request.form.get('answer_uuid')
+    if not answer_uuid:
+        print("ERROR:: app.update_answer_rank(): No answer_uuid provided")
+        return jsonify({'error': 'No answer_uuid provided'}), 400
+    
+    question_uuid = request.form.get('question_uuid')
+    if not question_uuid:
+        print("ERROR:: app.update_answer_rank(): No question_uuid provided")
+        return jsonify({'error': 'No question_uuid provided'}), 400
+
+    rank = request.form.get('rank')
+    if not rank:
+        print("ERROR:: app.update_answer_rank(): No rank provided")
+        return jsonify({'error': 'No rank provided'}), 400
+
+    try:
+        answer = my_db.update_answer_rank(answer_uuid=answer_uuid, question_uuid=question_uuid, rank=rank)
+        print("app.update_answer_rank() Success")
+        pprint(answer)
+        return jsonify(answer), 200
+    except Exception as e:
+        print("ERROR:: app.update_answer_rank(): %s" % e)
         # Hier ein geeignetes Logging-Framework verwenden
         return jsonify({'error': 'Internal server error'}), 500
 
