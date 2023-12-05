@@ -3,6 +3,7 @@ import psycopg2
 from definitions.user import User
 from definitions.question import Question
 from definitions.answer import Answer
+import os
 
 class DB:
     conn = None
@@ -11,12 +12,18 @@ class DB:
     def __init__(self):
         self.connect_db()
 
+
     def connect_db(self):
+        host = os.environ.get('POSTGRES_HOST')
+        database = os.environ.get('POSTGRES_DB')
+        user = os.environ.get('POSTGRES_USER')
+        password = os.environ.get('POSTGRES_PASSWORD')
+        
         self.conn = psycopg2.connect(
-            host="localhost",
-            database="ai-chat-db",
-            user="ai-chat-pguser",
-            password="--jarvis+")
+            host=host,
+            database=database,
+            user=user,
+            password=password)
 
     #
     # user functions
