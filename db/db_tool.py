@@ -76,6 +76,9 @@ class DB:
             print("execute_query() - %s" % e)
             pass
 
+    def new_user(self, user=None):
+        return self.insert_user(user)
+
     def insert_user(self, user):
 
         print("insert_user() - user: %s" % user)

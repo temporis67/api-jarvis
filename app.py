@@ -181,6 +181,37 @@ def fetch_user():
 
     return user.__dict__, 200
 
+@app.route('/api/new_user', methods=['POST', 'GET'])
+@cross_origin()
+def new_user():
+    if request.method != 'POST':
+        return jsonify({'error': 'Only POST method is allowed'}), 405
+
+    user = User()
+
+    try:
+        if request.method == 'POST':
+            # print("new_user() POST method")
+            result = request.form
+            for key in user.__dict__:
+                if key in result and result[key] is not None and result[key] != '':
+                    setattr(user, key, result[key])
+                    print("new_user() %s : %s" % (key, result[key]))
+                else:
+                    print("new_user() %s not found" % key)
+                    pass
+        else:
+            print("request not used the POST method")
+    except Exception as e:
+        print("Error bei app.new_user(): %s " % e)
+
+    user = my_db.new_user(user=user)
+
+    print("new_user() Success: ")
+    pprint(vars(user))
+
+    return user.__dict__, 200
+
 
 #
 # handling questions
