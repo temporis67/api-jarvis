@@ -5,6 +5,8 @@
 from flask import Flask, render_template, request, jsonify
 from flask_cors import CORS, cross_origin
 import json
+from dotenv import load_dotenv
+import os
 
 
 # project specific
@@ -14,6 +16,16 @@ from definitions.question import Question
 from definitions.answer import Answer
 from jarvis.jarvis import Jarvis
 from pprint import pprint
+
+# Lade die Umgebungsvariablen aus der .env-Datei
+load_dotenv()
+JARVIS_PROTOCOL=os.getenv('JARVIS_PROTOCOL') or "http"
+JARVIS_HOST=os.getenv('JARVIS_HOST') or "localhost"
+JARVIS_PORT=os.getenv('JARVIS_PORT') or "5000"
+JARVIS_BASE_URL=os.getenv('JARVIS_BASE_URL') or ""
+
+
+
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'vnkdjnfjknflasdf123s2#'
@@ -28,7 +40,7 @@ CORS(app)
 #
 # Static Pages
 #
-@app.route('/')
+@app.route(JARVIS_BASE_URL + '/')
 def index():  # put application's code here
     return render_template('index.html')
 
@@ -38,7 +50,7 @@ def index():  # put application's code here
 
 is_working = False
 
-@app.route('/api/ask', methods=['POST', 'GET'])
+@app.route(JARVIS_BASE_URL + '/api/ask', methods=['POST', 'GET'])
 @cross_origin()
 def ask():
     print("\n app.ask() Start")
@@ -156,7 +168,7 @@ def ask():
 #
 # handling user
 #
-@app.route('/api/user', methods=['POST', 'GET'])
+@app.route(JARVIS_BASE_URL + '/api/user', methods=['POST', 'GET'])
 @cross_origin()
 def fetch_user():
     # pprint(vars(request))
@@ -185,7 +197,7 @@ def fetch_user():
 
     return user.__dict__, 200
 
-@app.route('/api/new_user', methods=['POST', 'GET'])
+@app.route(JARVIS_BASE_URL + '/api/new_user', methods=['POST', 'GET'])
 @cross_origin()
 def new_user():
     if request.method != 'POST':
@@ -220,7 +232,7 @@ def new_user():
 #
 # handling questions
 #
-@app.route('/api/questions', methods=['POST', 'GET'])
+@app.route(JARVIS_BASE_URL + '/api/questions', methods=['POST', 'GET'])
 @cross_origin()
 def fetch_questions():
     print("app.fetch_questions() Start")
@@ -244,7 +256,7 @@ def fetch_questions():
         return jsonify({'error': 'Internal server error'}), 500
 
 
-@app.route('/api/new_question', methods=['POST', 'GET'])
+@app.route(JARVIS_BASE_URL + '/api/new_question', methods=['POST', 'GET'])
 @cross_origin()
 def new_question():
     if request.method != 'POST':
@@ -274,7 +286,7 @@ def new_question():
         return jsonify({'error': 'Internal server error'}), 500
 
 
-@app.route('/api/update_question_rank', methods=['POST', 'GET'])
+@app.route(JARVIS_BASE_URL + '/api/update_question_rank', methods=['POST', 'GET'])
 @cross_origin()
 def update_question_rank():
     print("********** app.update_question_rank() Start")
@@ -307,7 +319,7 @@ def update_question_rank():
         return jsonify({'error': 'Internal server error'}), 500
 
 
-@app.route('/api/update_question', methods=['POST', 'GET'])
+@app.route(JARVIS_BASE_URL + '/api/update_question', methods=['POST', 'GET'])
 @cross_origin()
 def update_question():
     if request.method != 'POST':
@@ -358,7 +370,7 @@ def update_question():
         return jsonify({'error': 'Internal server error'}), 500
 
 
-@app.route('/api/delete_question', methods=['POST', 'GET'])
+@app.route(JARVIS_BASE_URL + '/api/delete_question', methods=['POST', 'GET'])
 @cross_origin()
 def delete_question():
     if request.method != 'POST':
@@ -387,7 +399,7 @@ def delete_question():
 #
 # handling answers
 #
-@app.route('/api/answers', methods=['POST', 'GET'])
+@app.route(JARVIS_BASE_URL + '/api/answers', methods=['POST', 'GET'])
 @cross_origin()
 def get_answers():
     print("app.get_answers() Start")
@@ -411,7 +423,7 @@ def get_answers():
         return jsonify({'error': 'Internal server error'}), 500
 
 
-@app.route('/api/new_answer', methods=['POST', 'GET'])
+@app.route(JARVIS_BASE_URL + '/api/new_answer', methods=['POST', 'GET'])
 @cross_origin()
 def new_answer():
     if request.method != 'POST':
@@ -442,7 +454,7 @@ def new_answer():
         # Hier ein geeignetes Logging-Framework verwenden
         return jsonify({'error': 'Internal server error'}), 500
 
-@app.route('/api/update_answer_rank', methods=['POST', 'GET'])
+@app.route(JARVIS_BASE_URL + '/api/update_answer_rank', methods=['POST', 'GET'])
 @cross_origin()
 def update_answer_rank():
     # print("app.update_answer_rank() Start")
@@ -474,7 +486,7 @@ def update_answer_rank():
         # Hier ein geeignetes Logging-Framework verwenden
         return jsonify({'error': 'Internal server error'}), 500
 
-@app.route('/api/update_answer', methods=['POST', 'GET'])
+@app.route(JARVIS_BASE_URL + '/api/update_answer', methods=['POST', 'GET'])
 @cross_origin()
 def update_answer():
     if request.method != 'POST':
@@ -503,7 +515,7 @@ def update_answer():
         # Hier ein geeignetes Logging-Framework verwenden
         return jsonify({'error': 'Internal server error'}), 500
 
-@app.route('/api/delete_answer', methods=['POST', 'GET'])
+@app.route(JARVIS_BASE_URL + '/api/delete_answer', methods=['POST', 'GET'])
 @cross_origin()
 def delete_answer():
     if request.method != 'POST':
@@ -524,7 +536,7 @@ def delete_answer():
         return jsonify({'error': 'Internal server error'}), 500
 
 
-@app.route('/api/get_models', methods=['POST', 'GET'])
+@app.route(JARVIS_BASE_URL + '/api/get_models', methods=['POST', 'GET'])
 @cross_origin()
 def get_models():
     print("app.get_models() Start")
@@ -540,7 +552,7 @@ def get_models():
         # Hier ein geeignetes Logging-Framework verwenden
         return jsonify({'error': 'Internal server error'}), 500
 
-@app.route('/api/add_model', methods=['POST', 'GET'])
+@app.route(JARVIS_BASE_URL + '/api/add_model', methods=['POST', 'GET'])
 @cross_origin()
 def add_model():
     if request.method != 'POST':
@@ -567,7 +579,7 @@ def add_model():
         # Hier ein geeignetes Logging-Framework verwenden
         return jsonify({'error': 'Internal server error'}), 500
 
-@app.route('/api/update_model', methods=['POST', 'GET'])
+@app.route(JARVIS_BASE_URL + '/api/update_model', methods=['POST', 'GET'])
 @cross_origin()
 def update_model():
     if request.method != 'POST':
@@ -595,7 +607,7 @@ def update_model():
         # Hier ein geeignetes Logging-Framework verwenden
         return jsonify({'error': 'Internal server error'}), 500
 
-@app.route('/api/delete_model', methods=['POST', 'GET'])
+@app.route(JARVIS_BASE_URL + '/api/delete_model', methods=['POST', 'GET'])
 @cross_origin()
 def delete_model():
     if request.method != 'POST':
@@ -615,10 +627,8 @@ def delete_model():
         # Hier ein geeignetes Logging-Framework verwenden
         return jsonify({'error': 'Internal server error'}), 500
 
-
-
 #
 # Start App
 #
 if __name__ == '__main__':
-    app.run()
+    app.run(host=JARVIS_HOST, port=JARVIS_PORT, debug=True)
