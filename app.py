@@ -1,7 +1,11 @@
-import json
+#
+# Jarvis Backend API as proxy to internal and external model & db services
+#
 
 from flask import Flask, render_template, request, jsonify
 from flask_cors import CORS, cross_origin
+import json
+
 
 # project specific
 from db.db_tool import DB
