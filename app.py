@@ -506,9 +506,14 @@ def update_answer():
     if not content:
         print("Warning:: app.update_answer(): No content provided")
         # return jsonify({'error': 'No content provided'}), 400
+        
+    tags = request.form.get('tags')
+    if not tags:
+        print("Warning:: app.update_answer(): No tags provided")
+        return jsonify({'error': 'No tags provided'}), 400
 
     try:
-        answer = my_db.update_answer(answer_uuid=answer_uuid, title=title, content=content)
+        answer = my_db.update_answer(answer_uuid=answer_uuid, title=title, content=content)        
         return jsonify(answer), 200
     except Exception as e:
         print("ERROR:: app.update_answer(): %s" % e)
