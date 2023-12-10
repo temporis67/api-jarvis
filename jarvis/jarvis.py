@@ -22,9 +22,31 @@ model_name = "spicyboros-13b-2.2.Q5_K_M.gguf"
 # "ON" or "OFF
 LOAD_LLM = "ON"
 
+
 class Jarvis:
     llm = None
     openai_client = None
+    current_loaded_model = None
+    
+    # this function invalidates the current LLM model and loads a new one
+    def switch_local_model(self, model_name):
+        self.llm = None
+        time_start = time.time()
+        print("Loading model: %s" % model_name)
+        # load the large language model file
+        if (LOAD_LLM != "OFF"):
+            self.llm = Llama(model_path="models/" + model_name,
+                             n_ctx=2048,
+                             n_gpu_layers=n_gpu_layers,
+                             n_batch=n_batch,
+                             verbose=True)
+            time_to_load = time.time() - time_start
+            print("RELOADED new model %s in % seconds" % (model_name, time_to_load))
+        else:
+            self.llm = None
+        return
+
+    
 
     def ask(self, model=None, prompt=None, context=None, question=None):
         if model is None:
@@ -36,6 +58,9 @@ class Jarvis:
             raise Exception("ERROR:: Jarvis.ask() No model_type specified.")
 
         if model['model_type'] == "local":
+            if (model['model_filename'] != self.current_loaded_model):
+                self.switch_local_model(model['model_filename'])
+            
             return self.ask_local_model(prompt)
         elif model['model_type'] == "remote":
             return self.ask_remote_model(model=model, prompt=prompt, context=context, question=question)
@@ -105,7 +130,7 @@ class Jarvis:
             return self.ask_davinci_model(model=model, prompt=prompt, context=context, question=question)
         else:
             print("ERROR:: Jarvis.ask_remote_model() No valid model specified. %s" % model)
-            raise Exception("ERROR:: Jarvis.ask_remote_model() No valid model specified %s." % model)
+            raise Exception("ERROR:: Jarvis.ask_remote_model() No valid model specified %s." % model)        
 
     def ask_local_model(self, prompt):
         time_start = time.time()
@@ -156,6 +181,7 @@ class Jarvis:
                              n_gpu_layers=n_gpu_layers,
                              n_batch=n_batch,
                              verbose=True)
+            self.current_loaded_model = model_name
         else:
             self.llm = None
 
