@@ -1,4 +1,5 @@
 import datetime
+import json
 import psycopg2
 from definitions.user import User
 from definitions.question import Question
@@ -24,6 +25,173 @@ class DB:
             database=database,
             user=user,
             password=password)
+        
+        
+    #
+    # tag functions
+    #
+    # CREATE TABLE tags(
+    # uuid uuid NOT NULL,
+    # name varchar(255) NOT NULL,
+    # PRIMARY KEY(uuid)
+    # );
+    
+    def get_tag_by_name(self, tag=None):
+        # Nutze eine parametrisierte Abfrage, um SQL-Injection zu verhindern
+        query = None
+        values = None    
+        
+        print("get_tag_by_name() - tag: %s" % tag)
+        
+        tag = json.loads(tag)
+
+        if tag is None or "name" not in tag or tag["name"] == "":
+            # Log error or raise an exception
+            print("ERROR: get_tag() - no name")
+            return None
+
+        if tag:
+            query = "SELECT uuid, name FROM tags WHERE name = %s"
+            values = (tag["name"],)
+
+        if query:
+            print("get_tag() - query: %s, %s" % (query, values))
+            tags = self.execute_query_tags(query, values)
+            print("get_tag() - tags: %s" % tags)
+            if tags:
+                return tags[0]
+            else:
+                tag = self.insert_tag(tag["name"])
+                return tag
+        else:
+            # Log error or raise an exception
+            print("get_tag() - no query")
+            return None
+        
+    # this function inserts a new tag into table tags
+    def insert_tag(self, name=None):
+        if name is None:
+            # Log error or raise an exception
+            print("ERROR: insert_tag() - no name")
+            return None
+        
+        query = "INSERT INTO tags (uuid, name) VALUES (DEFAULT, %s) RETURNING uuid, name"
+        values = (name,)
+        print("insert_tag() - query: %s, values: %s" % (query, values))
+        
+        try:
+            with self.conn.cursor() as cur:
+                cur.execute(query, values)
+                res = cur.fetchone()
+                
+                if res:
+                    # Log successful operation
+                    print("insert_tag() - tag inserted %s" % res[0])
+                    tag = {'uuid': res[0], 'name': res[1]}
+                    return tag
+                else:
+                    # Log error or raise an exception
+                    print("insert_tag() - no res returned")
+                    return None
+                
+        except Exception as e:
+            # Log exception
+            print("insert_tag() - %s" % e)
+            return None
+        
+        
+    # this function adds a tag to an object via table object_table
+    def add_tag_to_object(self, object_uuid=None, tag_uuid=None):
+        if object_uuid is None or tag_uuid is None:
+            # Log error or raise an exception
+            print("ERROR: add_tag_to_object() - no object_uuid or tag_uuid")
+            return None
+        
+        query = "INSERT INTO object_tag (object_uuid, tag_uuid) VALUES (%s, %s)"
+        values = (object_uuid, tag_uuid)
+        return self.execute_query(query, values)
+    
+        
+    # tags = [{'uuid':'1234567889','name':'tag1'}, {'uuid':'1234567889','name':'tag2'}]
+    def set_tags_for_object(self, object_uuid=None, tags=None):
+        if object_uuid is None or tags is None:
+            # Log error or raise an exception
+            print("ERROR: set_tags_for_object() - no object_uuid or tags")
+            return None
+        
+        # delete all tags for object_uuid
+        query = "DELETE FROM object_tag WHERE object_uuid = %s"
+        values = (object_uuid,)
+        self.execute_query(query, values)
+        
+        # insert new tags for object_uuid
+        for tag in tags:
+            query = "INSERT INTO object_tag (object_uuid, tag_uuid) VALUES (%s, %s)"
+            values = (object_uuid, tag['uuid'])
+            self.execute_query(query, values)
+            
+        return True
+    
+    def get_tags_for_object(self, object_uuid=None):
+        if object_uuid is None:
+            # Log error or raise an exception
+            print("ERROR: get_tags_for_object() - no object_uuid")
+            return None
+        
+        query = ("SELECT t.uuid, t.name FROM tags t "
+                 "JOIN object_tag ot ON t.uuid = ot.tag_uuid "
+                 "WHERE ot.object_uuid = %s")
+        values = (object_uuid,)
+        return self.execute_query_tags(query, values)
+    
+    def remove_tag_from_object(self, object_uuid=None, tag_uuid=None):
+        if object_uuid is None or tag_uuid is None:
+            # Log error or raise an exception
+            print("ERROR: remove_tag_from_object() - no object_uuid or tag_uuid")
+            return None
+        
+        query = "DELETE FROM object_tag WHERE object_uuid = %s AND tag_uuid = %s"
+        values = (object_uuid, tag_uuid)
+        return self.execute_query(query, values)
+    
+    # this function returns a top 10 list of tags sorted by their count on table object_tag
+    def get_top_tags(self):
+        query = ("SELECT t.uuid, t.name, COUNT(*) AS count FROM tags t "
+                 "JOIN object_tag ot ON t.uuid = ot.tag_uuid "
+                 "GROUP BY t.uuid, t.name "
+                 "ORDER BY count DESC "
+                 "LIMIT 10")
+        values = ()
+        return self.execute_query_tags(query, values)
+    
+    def execute_query_tags(self, query, values):
+        try:
+            with self.conn.cursor() as cur:
+                cur.execute(query, values)
+                res = cur.fetchall()
+                
+                tags = []
+                for tag in res:
+                    tags.append({'uuid': tag[0], 'name': tag[1]})                    
+                
+                return tags
+            
+        except Exception as e:
+            # Log exception
+            print("Error:: execute_query_tags() - %s" % e)
+            return None
+        
+    def execute_query(self, query, values):
+        try:
+            with self.conn.cursor() as cur:
+                cur.execute(query, values)
+                self.conn.commit()
+                return True
+            
+        except Exception as e:
+            # Log exception
+            print("Error:: execute_query() - %s" % e)
+            return False
 
     #
     # user functions
@@ -348,6 +516,10 @@ class DB:
                 for row in res:
                     answer = {column_names[i]: str(row[i]) for i in range(len(column_names))}
                     answers[row[column_names.index('uuid')]] = answer
+                    
+                    # get the tags for answer['uuid'] and add them to answer
+                    tags = self.get_tags_for_object(answer['uuid'])
+                    answer['tags'] = tags
 
                 return answers
 

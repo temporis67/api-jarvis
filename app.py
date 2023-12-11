@@ -193,7 +193,7 @@ def fetch_user():
     user = my_db.get_user(user=user)
 
     print("fetch_user() Success: ")
-    pprint(vars(user))
+    pprint(user)
 
     return user.__dict__, 200
 
@@ -629,6 +629,152 @@ def delete_model():
         return jsonify(model), 200
     except Exception as e:
         print("ERROR:: app.delete_model(): %s" % e)
+        # Hier ein geeignetes Logging-Framework verwenden
+        return jsonify({'error': 'Internal server error'}), 500
+    
+# expects param 'tag' in the request
+@app.route(JARVIS_BASE_URL + '/api/get_tag_by_name', methods=['POST', 'GET'])
+@cross_origin()
+def get_tag():
+    print("app.get_tag() Start")
+    if request.method != 'POST':
+        return jsonify({'error': 'Only POST method is allowed'}), 405
+    
+    tag = request.form.get('tag')
+    if not tag or str(tag) == 'null':
+        print("ERROR:: app.get_tag(): No tag provided")
+        return jsonify({'error': 'No tag provided'}), 400
+
+    try:
+        found_tag = my_db.get_tag_by_name(tag)
+        print("app.get_tag() Success - %s tag found" % found_tag['uuid'])
+        
+        return jsonify(found_tag), 200
+    except Exception as e:
+        print("ERROR:: app.get_tag(): %s" % e)
+        # Hier ein geeignetes Logging-Framework verwenden
+        return jsonify({'error': 'Internal server error'}), 500
+
+# this function set one tag to a given object_uuid
+# expects param 'object_uuid' and 'tag' in the request
+@app.route(JARVIS_BASE_URL + '/api/add_tag_to_object', methods=['POST', 'GET'])
+@cross_origin()
+def add_tag_to_object():
+    print("app.add_tag_to_object() Start")
+    if request.method != 'POST':
+        return jsonify({'error': 'Only POST method is allowed'}), 405
+    
+    object_uuid = request.form.get('object_uuid')
+    if not object_uuid or str(object_uuid) == 'null':
+        print("ERROR:: app.add_tag_to_object(): No object_uuid provided")
+        return jsonify({'error': 'No object_uuid provided'}), 400
+    
+    tag = request.form.get('tag')
+    if not tag or str(tag) == 'null':
+        print("ERROR:: app.add_tag_to_object(): No tag provided")
+        return jsonify({'error': 'No tag provided'}), 400
+    tag = json.loads(tag)
+
+    try:
+        my_db.add_tag_to_object(object_uuid, tag['uuid'])
+        print("app.add_tag_to_object() Success")
+        
+        return jsonify(tag), 200
+    except Exception as e:
+        print("ERROR:: app.add_tag_to_object(): %s" % e)
+        # Hier ein geeignetes Logging-Framework verwenden
+        return jsonify({'error': 'Internal server error'}), 500
+
+
+# this function sets a list of tags for a given answer
+# expects param 'answer_uuid' and 'tags' in the request
+@app.route(JARVIS_BASE_URL + '/api/set_tags_for_answer', methods=['POST', 'GET'])
+@cross_origin()
+def set_tags_for_answer():
+    print("app.set_tags_for_answer() Start")
+    if request.method != 'POST':
+        return jsonify({'error': 'Only POST method is allowed'}), 405
+    
+    answer_uuid = request.form.get('answer_uuid')
+    if not answer_uuid or str(answer_uuid) == 'null':
+        print("ERROR:: app.set_tags_for_answer(): No answer_uuid provided")
+        return jsonify({'error': 'No answer_uuid provided'}), 400
+    
+    tags = request.form.get('tags')
+    if not tags or str(tags) == 'null':
+        print("ERROR:: app.set_tags_for_answer(): No tags provided")
+        return jsonify({'error': 'No tags provided'}), 400
+
+    try:
+        tags = json.loads(tags)
+        print("app.set_tags_for_answer() tags: %s" % tags)
+    except json.JSONDecodeError:
+        print("ERROR:: app.set_tags_for_answer(): Invalid JSON for tags")
+        return jsonify({'error': 'Invalid JSON format for tags'}), 400
+
+    try:
+        my_db.set_tags_for_object(answer_uuid, tags)
+        print("app.set_tags_for_answer() Success")
+        
+        return jsonify({'success': True}), 200
+    except Exception as e:
+        print("ERROR:: app.set_tags_for_answer(): %s" % e)
+        # Hier ein geeignetes Logging-Framework verwenden
+        return jsonify({'error': 'Internal server error'}), 500
+
+
+# this function removes a tag from a given object_uuid
+# expects param 'object_uuid' and 'tag' in the request
+@app.route(JARVIS_BASE_URL + '/api/remove_tag_from_object', methods=['POST', 'GET'])
+@cross_origin()
+def remove_tag_from_object():
+    print("app.remove_tag_from_object() Start")
+    if request.method != 'POST':
+        return jsonify({'error': 'Only POST method is allowed'}), 405
+    
+    object_uuid = request.form.get('object_uuid')
+    if not object_uuid or str(object_uuid) == 'null':
+        print("ERROR:: app.remove_tag_from_object(): No object_uuid provided")
+        return jsonify({'error': 'No object_uuid provided'}), 400
+    
+    tag_uuid = request.form.get('tag_uuid')
+    if not tag_uuid or str(tag_uuid) == 'null':
+        print("ERROR:: app.remove_tag_from_object(): No tag provided")
+        return jsonify({'error': 'No tag provided'}), 400
+    tag_uuid = json.loads(tag_uuid)
+
+    try:
+        my_db.remove_tag_from_object(object_uuid, tag_uuid)
+        print("app.remove_tag_from_object() Success")
+        
+        return jsonify(tag_uuid), 200
+    except Exception as e:
+        print("ERROR:: app.remove_tag_from_object(): %s" % e)
+        # Hier ein geeignetes Logging-Framework verwenden
+        return jsonify({'error': 'Internal server error'}), 500
+    
+# this function gets all tags for an object_uuid
+@app.route(JARVIS_BASE_URL + '/api/get_tags_for_object', methods=['POST', 'GET'])
+@cross_origin()
+def get_tags_for_object():
+    
+    if request.method != 'POST':
+        return jsonify({'error': 'Only POST method is allowed'}), 405
+    
+    object_uuid = request.form.get('object_uuid')
+    if not object_uuid or str(object_uuid) == 'null':
+        print("ERROR:: app.get_tags_for_object(): No object_uuid provided")
+        return jsonify({'error': 'No object_uuid provided'}), 400
+    
+    print("app.get_tags_for_object() Start %s" % object_uuid)
+
+    try:
+        tags = my_db.get_tags_for_object(object_uuid)
+        print("app.get_tags_for_object() Success: %s Tags" % len(tags))
+        
+        return jsonify(tags), 200
+    except Exception as e:
+        print("ERROR:: app.get_tags_for_object(): %s" % e)
         # Hier ein geeignetes Logging-Framework verwenden
         return jsonify({'error': 'Internal server error'}), 500
 
