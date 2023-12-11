@@ -595,16 +595,13 @@ class DB:
         
         query = ("update question_answer set rank = %s where question_uuid = %s and answer_uuid = %s")
         values = (rank, question_uuid, answer_uuid)
-        print("db_tool.update_answer_rank(question_uuid):: query: %s, values: %s" % (query, values))
+        # print("db_tool.update_answer_rank(question_uuid):: query: %s, values: %s" % (query, values))
         
         try:
             with self.conn.cursor() as cur:
-                cur.execute(query, values)
-                
-                print("Updated Answer Rank in DB: %s" % str(answer_uuid))
-                
-                self.conn.commit()
-                
+                cur.execute(query, values)                
+                # print("Updated Answer Rank in DB: %s" % str(answer_uuid))
+                self.conn.commit()                
                 return {}
             
         except Exception as e:

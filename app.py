@@ -478,8 +478,8 @@ def update_answer_rank():
 
     try:
         answer = my_db.update_answer_rank(answer_uuid=answer_uuid, question_uuid=question_uuid, rank=rank)
-        print("app.update_answer_rank() Success")
-        pprint(answer)
+        #print("app.update_answer_rank() Success")
+        # pprint(answer)
         return jsonify(answer), 200
     except Exception as e:
         print("ERROR:: app.update_answer_rank(): %s" % e)
@@ -766,11 +766,11 @@ def get_tags_for_object():
         print("ERROR:: app.get_tags_for_object(): No object_uuid provided")
         return jsonify({'error': 'No object_uuid provided'}), 400
     
-    print("app.get_tags_for_object() Start %s" % object_uuid)
+    # print("app.get_tags_for_object() Start %s" % object_uuid)
 
     try:
         tags = my_db.get_tags_for_object(object_uuid)
-        print("app.get_tags_for_object() Success: %s Tags" % len(tags))
+        # print("app.get_tags_for_object() Success: %s Tags" % len(tags))
         
         return jsonify(tags), 200
     except Exception as e:
