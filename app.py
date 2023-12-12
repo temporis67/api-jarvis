@@ -163,37 +163,88 @@ def ask():
         return jsonify({'error': 'Internal server error'}), 500
 
 
-
-
 #
 # handling user
 #
+
+# this function verifies the user by email and password
+# expects param 'email' and 'password' in the request
+@app.route(JARVIS_BASE_URL + '/api/verify_user', methods=['POST', 'GET'])
+@cross_origin()
+def verify_user():
+    # pprint(vars(request))
+    user = User()
+    given_passsword = None
+    if request.method == 'POST' and 'password' in request.form:
+        given_passsword = request.form.get('password')
+
+    try:
+        if request.method == 'POST':
+            # print("verify_user() POST method")
+            result = request.form
+            for key in user.__dict__:
+                if key in result and result[key] is not None and result[key] != '':
+                    setattr(user, key, result[key])
+                    # print("verify_user() by %s : %s" % (key, result[key]))
+                else:
+                    # print("verify_user() %s not found" % key)
+                    pass
+        else:
+            print("request not used the POST method")
+    except Exception as e:
+        print("Error bei app.verify_user(): %s " % e)
+
+    user = my_db.get_user(user=user)
+
+    if user is None:
+        print("verify_user() user not found")
+        return jsonify({'error': 'User not found'}), 400
+    
+    if str(given_passsword) != str(user.password):
+        print("verify_user() wrong password: %s ### %s" % (str(given_passsword), str(user.password)))
+        return jsonify({'error': 'Wrong password'}), 400
+
+    print("verify_user() Success: ")
+    if(user):
+        pprint(vars(user))
+
+    return user.__dict__, 200
+
+
+
 @app.route(JARVIS_BASE_URL + '/api/user', methods=['POST', 'GET'])
 @cross_origin()
-def fetch_user():
+def get_user():
     # pprint(vars(request))
     user = User()
 
     try:
         if request.method == 'POST':
-            # print("fetch_user() POST method")
+            # print("get_user() POST method")
             result = request.form
             for key in user.__dict__:
                 if key in result and result[key] is not None and result[key] != '':
                     setattr(user, key, result[key])
-                    print("fetch_user() %s : %s" % (key, result[key]))
+                    print("get_user() by %s : %s" % (key, result[key]))
                 else:
-                    print("fetch_user() %s not found" % key)
+                    # print("get_user() %s not found" % key)
                     pass
         else:
             print("request not used the POST method")
     except Exception as e:
-        print("Error bei app.fetch_user(): %s " % e)
+        print("Error bei app.get_user(): %s " % e)
+
 
     user = my_db.get_user(user=user)
 
-    print("fetch_user() Success: ")
-    pprint(user)
+    if user is None:
+        print("get_user() user not found")
+        return jsonify({'error': 'User not found'}), 400
+        
+    
+    print("get_user() Success: ")
+    if(user):
+        pprint(vars(user))
 
     return user.__dict__, 200
 
@@ -207,7 +258,7 @@ def new_user():
 
     try:
         if request.method == 'POST':
-            # print("new_user() POST method")
+            print("new_user() POST method")
             result = request.form
             for key in user.__dict__:
                 if key in result and result[key] is not None and result[key] != '':
@@ -223,8 +274,8 @@ def new_user():
 
     user = my_db.new_user(user=user)
 
-    print("new_user() Success: ")
-    pprint(vars(user))
+    print("new_user() Success: %s" % vars(user))
+    # pprint(vars(user))
 
     return user.__dict__, 200
 

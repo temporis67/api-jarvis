@@ -222,7 +222,7 @@ class DB:
         else:
             # Log error or raise an exception
             print("get_user() - no query")
-            pass
+            return None
 
     def execute_query_user(self, query, values, user):
         try:
@@ -231,13 +231,13 @@ class DB:
                 res = cur.fetchone()
 
                 if res:
-                    user.uuid, user.name, user.email, user.password = res
-                    # Log successful operation
+                    # User exists
+                    user.uuid, user.name, user.email, user.password = res                    
                     print("execute_query() - user found %s" % user.uuid)
                     return user
                 else:
-                    # Handle insert new user
-                    return self.insert_user(user)
+                    # User does not exist
+                    return None
 
         except Exception as e:
             # Log exception
@@ -261,11 +261,13 @@ class DB:
                 if res:
                     user.uuid = res[0]
                     # Log successful operation
+                    print("insert_user() - user inserted %s" % user.uuid)
+                    self.conn.commit()
                     return user
                 else:
                     # Log error or raise an exception
                     print("insert_user() - no res returned")
-                    pass
+                    return None
 
         except Exception as e:
             # Log exception
