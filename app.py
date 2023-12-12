@@ -10,7 +10,7 @@ import os
 
 
 # project specific
-from db.db_tool import DB
+from db_tool import DB
 from definitions.user import User
 from definitions.question import Question
 from definitions.answer import Answer
