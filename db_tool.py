@@ -721,33 +721,38 @@ class DB:
             self.conn.rollback()
             return {}
 
-    # def add_model(self, model):
-    #     query = ("INSERT INTO models (uuid, model_filename, model_label, model_type, default_prompt, default_max_length) VALUES (DEFAULT, %s, %s, %s, %s, %s) RETURNING uuid")
-    #     values = (model.model_filename, model.model_label, model.model_type, model.default_prompt, model.default_max_length)
-    #
-    #     try:
-    #         with self.conn.cursor() as cur:
-    #             cur.execute(query, values)
-    #             res = cur.fetchone()
-    #
-    #             if res:
-    #                 model.uuid = res[0]
-    #                 # Log successful operation
-    #                 return model
-    #             else:
-    #                 # Log error or raise an exception
-    #                 print("add_model() - no res returned")
-    #                 pass
-    #
-    #     except Exception as e:
-    #         # Log exception
-    #         print("add_model() - %s" % e)
-    #         pass
+    def add_model(self, model):
+        query = "INSERT INTO models (uuid, model_filename, model_label, model_type, default_prompt, default_max_length)" \
+                " VALUES (DEFAULT, %s, %s, %s, %s, %s) RETURNING uuid"
+        values = (model['model_filename'], model['model_label'], model['model_type'],
+                  model['default_prompt'],
+                  model['default_max_length'])
+
+        try:
+            with self.conn.cursor() as cur:
+                cur.execute(query, values)
+                res = cur.fetchone()
+
+                if res:
+                    model['uuid'] = res[0]
+                    # Log successful operation
+                    print("insert_model() - model inserted %s" % model['uuid'])
+                    self.conn.commit()
+                    return model
+                else:
+                    # Log error or raise an exception
+                    print("insert_model() - no res returned")
+                    return None
+
+        except Exception as e:
+            # Log exception
+            print("insert_model() - %s" % e)
+            return None
 
     def update_model(self, model):
-        query = "UPDATE models SET model_filename = %s, model_label = %s,"\
+        query = "UPDATE models SET model_label = %s,"\
                 " model_type = %s, default_prompt = %s, default_max_length = %s WHERE uuid = %s"
-        values = (model['model_filename'], model['model_label'], model['model_type'],
+        values = (model['model_label'], model['model_type'],
                   model['default_prompt'],
                   model['default_max_length'], model['uuid'])
 

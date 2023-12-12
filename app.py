@@ -677,15 +677,21 @@ def delete_model():
     if request.method != 'POST':
         return jsonify({'error': 'Only POST method is allowed'}), 405
 
-    model_uuid = request.form.get('model_uuid')
-    if not model_uuid:
+    model_string = request.form.get('model')
+    if not model_string or str(model_string) == 'null':
+        print("ERROR:: app.delete_model(): No model provided")
+        return jsonify({'error': 'No model provided'}), 400
+    model = json.loads(model_string)
+
+    
+    if not "uuid" in model:
         print("ERROR:: app.delete_model(): No model_uuid provided")
         return jsonify({'error': 'No model_uuid provided'}), 400
 
     try:
-        model = my_db.delete_model(model_uuid=model_uuid)
-        print("app.delete_model() Success %s" % model_uuid)
-        return jsonify(model), 200
+        my_db.delete_model(model_uuid=model["uuid"])
+        print("app.delete_model() Success %s" % model["uuid"])
+        return jsonify({"message":"Model deleted."}), 200
     except Exception as e:
         print("ERROR:: app.delete_model(): %s" % e)
         # Hier ein geeignetes Logging-Framework verwenden
