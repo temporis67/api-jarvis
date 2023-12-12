@@ -39,9 +39,10 @@ class Jarvis:
                              n_ctx=2048,
                              n_gpu_layers=n_gpu_layers,
                              n_batch=n_batch,
-                             verbose=False)
+                             verbose=True)
             time_to_load = time.time() - time_start
             print("RELOADED new model %s in % seconds" % (model_name, time_to_load))
+            self.current_loaded_model = model_name
         else:
             self.llm = None
         return
@@ -180,7 +181,7 @@ class Jarvis:
                              n_ctx=2048,
                              n_gpu_layers=n_gpu_layers,
                              n_batch=n_batch,
-                             verbose=False)
+                             verbose=True)
             self.current_loaded_model = model_name
         else:
             self.llm = None

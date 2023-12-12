@@ -127,11 +127,12 @@ def ask():
         is_working = False
         return jsonify({'error': 'No prompt provided'}), 400
 
-    question = request.form.get('question')
-    if not question or str(question) == 'null':
+    question_string = request.form.get('question')
+    if not question_string or str(question_string) == 'null':
         print("ERROR:: app.ask(): No question provided")
         is_working = False
         return jsonify({'error': 'No question provided'}), 400
+    
 
     context = request.form.get('context')
     if not context or str(context) == 'null':
@@ -139,12 +140,19 @@ def ask():
         # is_working = False
         # return jsonify({'error': 'No context provided'}), 400
         pass
+    
     try:
         # print("app.ask() user_uuid: %s" % user_uuid)
         # print("app.ask() question: %s" % question)
         #
-        [answer_text, time_elapsed] = my_jarvis.ask(model=model, prompt=prompt, context=context, question=question)
+        [answer_text, time_elapsed] = my_jarvis.ask(model=model, prompt=prompt, context=context, question=question_string)
+        
+        if answer_text is None or answer_text == "null" or answer_text == "":
+            print("WARNING:: app.ask(): Model provided no answer")
+            answer_text = "Sorry, ich weiß es nicht. (Model hat keine Antwort geliefert.)"
         print("app.ask() Success - answer: #%s#" % answer_text)
+        
+        
         answer['title'] = answer_text[:100]   # get short title from llm.
         answer['content'] = answer_text
         answer['time_elapsed'] = time_elapsed
