@@ -140,6 +140,9 @@ def ask():
         # is_working = False
         # return jsonify({'error': 'No context provided'}), 400
         pass
+    # remove whitespaces and \n from context
+    context = context.replace("  ", " ")
+    context = context.replace("\n\n", "")
     
     try:
         # print("app.ask() user_uuid: %s" % user_uuid)
