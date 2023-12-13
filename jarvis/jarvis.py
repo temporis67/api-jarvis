@@ -16,9 +16,9 @@ load_dotenv()
 n_gpu_layers = 43  # Change this value based on your model and your GPU VRAM pool.
 n_batch = 512  # Should be between 1 and n_ctx, consider the amount of VRAM in your GPU.
 
-# model_name = "spicyboros-13b-2.2.Q5_K_M.gguf"
+model_name = "spicyboros-13b-2.2.Q5_K_M.gguf"
 # model_name = "Llama-2-13b-chat-german-GGUF.q5_K_M.bin"
-model_name ="tinyllama-1.1b-chat-v0.6.Q5_K_M.gguf"
+# model_name ="tinyllama-1.1b-chat-v0.6.Q5_K_M.gguf"
 
 # "ON" or "OFF
 LOAD_LLM = "ON"
