@@ -302,7 +302,7 @@ class DB:
 
                 questions = {}
                 for qu in res:
-                    # print("db_tool.get_questions(user_uuid):: qu: %s" % qu[4])
+                    print("db_tool.get_questions(user_uuid):: qu: %s" % qu[4])
 
                     date_created = qu[3]
                     date_updated = qu[4]
@@ -517,6 +517,9 @@ class DB:
                 answers = {}
                 for row in res:
                     answer = {column_names[i]: str(row[i]) for i in range(len(column_names))}
+                    
+                    
+                    
                     answers[row[column_names.index('uuid')]] = answer
                     
                     # get the tags for answer['uuid'] and add them to answer
@@ -574,14 +577,15 @@ class DB:
                     'question': question_uuid,
                     'date_created': date_created,
                     'date_updated': date_updated,
+                    'rank': 1000
                 }
 
                 print("New Answer in DB: %s" % str(answer))
 
-                update_question_query = "insert into question_answer (question_uuid, answer_uuid) values (%s, %s)"
-                update_question_values = (question_uuid, answer['uuid'])
+                insert_question_query = "insert into question_answer (question_uuid, answer_uuid) values (%s, %s)"
+                insert_question_values = (question_uuid, answer['uuid'])
 
-                cur.execute(update_question_query, update_question_values)
+                cur.execute(insert_question_query, insert_question_values)
 
                 self.conn.commit()
 
