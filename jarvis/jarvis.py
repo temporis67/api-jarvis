@@ -16,9 +16,9 @@ load_dotenv()
 n_gpu_layers = 43  # Change this value based on your model and your GPU VRAM pool.
 n_batch = 512  # Should be between 1 and n_ctx, consider the amount of VRAM in your GPU.
 
-model_name = "spicyboros-13b-2.2.Q5_K_M.gguf"
+# model_name = "spicyboros-13b-2.2.Q5_K_M.gguf"
 # model_name = "Llama-2-13b-chat-german-GGUF.q5_K_M.bin"
-# model_name ="tinyllama-1.1b-chat-v0.6.Q5_K_M.gguf"
+model_name = "tinyllama-1.1b-chat-v0.6.Q5_K_M.gguf"
 
 # "ON" or "OFF
 LOAD_LLM = "ON"
@@ -28,6 +28,7 @@ class Jarvis:
     llm = None
     openai_client = None
     current_loaded_model = None
+    
     
     # this function invalidates the current LLM model and loads a new one
     def switch_local_model(self, model_name):
@@ -174,8 +175,10 @@ class Jarvis:
         return [answer, time_query]
 
     def __init__(self):
+                                
+        
+        print("loading model: %s" % model_name)
         time_start = time.time()
-        print("Loading model: %s" % model_name)
         # load the large language model file
         if (LOAD_LLM != "OFF"):
             self.llm = Llama(model_path="models/" + model_name,
@@ -187,6 +190,9 @@ class Jarvis:
         else:
             self.llm = None
 
+        time_to_load = time.time() - time_start
+        print("loaded model %s in %s seconds" % (model_name, time_to_load))
+
         # load the OpenAI API
         openai_key = os.getenv('OPENAI_API_KEY')
         openai_org = os.getenv('OPENAI_API_ORG')
@@ -196,5 +202,4 @@ class Jarvis:
             api_key=openai_key,
         )
 
-        time_to_load = time.time() - time_start
-        print("loaded model %s in %s seconds" % (model_name, time_to_load))
+

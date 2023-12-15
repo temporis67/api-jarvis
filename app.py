@@ -15,6 +15,7 @@ from definitions.user import User
 from definitions.question import Question
 from definitions.answer import Answer
 from jarvis.jarvis import Jarvis
+from tagger import Tagger
 from pprint import pprint
 
 # Lade die Umgebungsvariablen aus der .env-Datei
@@ -33,6 +34,7 @@ app.config['DEBUG'] = 'True'
 
 my_jarvis = Jarvis()
 my_db = DB()
+my_tagger = Tagger()
 
 CORS(app)
 
@@ -568,11 +570,6 @@ def update_answer():
     if not content:
         print("Warning:: app.update_answer(): No content provided")
         # return jsonify({'error': 'No content provided'}), 400
-        
-    tags = request.form.get('tags')
-    if not tags:
-        print("Warning:: app.update_answer(): No tags provided")
-        return jsonify({'error': 'No tags provided'}), 400
 
     try:
         answer = my_db.update_answer(answer_uuid=answer_uuid, title=title, content=content)        
@@ -843,6 +840,35 @@ def get_tags_for_object():
         return jsonify(tags), 200
     except Exception as e:
         print("ERROR:: app.get_tags_for_object(): %s" % e)
+        # Hier ein geeignetes Logging-Framework verwenden
+        return jsonify({'error': 'Internal server error'}), 500
+    
+# this function generates a list of tags with jarvis.tag(content)
+# expects param 'context' in the request
+@app.route(JARVIS_BASE_URL + '/api/generate_tags', methods=['POST', 'GET'])
+@cross_origin()
+def generate_tags():
+    print("app.generate_tags() Start")
+    if request.method != 'POST':
+        return jsonify({'error': 'Only POST method is allowed'}), 405
+    
+    context = request.form.get('context')
+    if not context or str(context) == 'null':
+        print("ERROR:: app.generate_tags(): No context provided")
+        return jsonify({'error': 'No context provided'}), 400
+
+    object_uuid = request.form.get('object_uuid')
+    if not object_uuid or str(object_uuid) == 'null':
+        print("ERROR:: app.generate_tags(): No object_uuid provided")
+        return jsonify({'error': 'No object_uuid provided'}), 400
+
+
+    try:        
+        tags = my_tagger.tag(object_uuid=object_uuid, content=context)
+        print("app.generate_tags() Success: %s Tags" % tags)        
+        return jsonify(tags), 200
+    except Exception as e:
+        print("ERROR:: app.generate_tags(): %s" % e)
         # Hier ein geeignetes Logging-Framework verwenden
         return jsonify({'error': 'Internal server error'}), 500
 
