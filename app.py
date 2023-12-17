@@ -298,7 +298,7 @@ def new_user():
 #
 @app.route(JARVIS_BASE_URL + '/api/questions', methods=['POST', 'GET'])
 @cross_origin()
-def fetch_questions():
+def get_questions():
     print("app.fetch_questions() Start")
     if request.method != 'POST':
         return jsonify({'error': 'Only POST method is allowed'}), 405
@@ -308,10 +308,19 @@ def fetch_questions():
         print("ERROR:: app.fetch_questions(): No user_uuid provided")
         return jsonify({'error': 'No user_uuid provided'}), 400
 
+    isFilteredParam = request.form.get('filter')
+    isFiltered = False
+    if isFilteredParam and str(isFilteredParam) == 'true':
+        isFiltered = True
+    else:
+        isFiltered = False
+
     try:
         print("app.fetch_questions() user_uuid: %s" % user_uuid)
-
-        questions = my_db.get_questions(user_uuid=user_uuid)
+        if isFiltered:
+            questions = my_db.get_questions_by_tag(user_uuid=user_uuid)
+        else:
+            questions = my_db.get_questions(user_uuid=user_uuid)
         print("app.fetch_questions() Success - %s questions found" % len(questions))
         return jsonify(questions), 200
     except Exception as e:

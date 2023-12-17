@@ -142,7 +142,7 @@ class DB:
                  "JOIN object_tag ot ON t.uuid = ot.tag_uuid "
                  "WHERE ot.object_uuid = %s")
         values = (object_uuid,)
-        print("get_tags_for_object() uuid: %s" % (values))
+        # print("get_tags_for_object() uuid: %s" % (values))
         return self.execute_query_tags(query, values)
     
     def remove_tag_from_object(self, object_uuid=None, tag_uuid=None):
@@ -175,7 +175,7 @@ class DB:
                 for tag in res:
                     tags.append({'uuid': tag[0], 'name': tag[1]})                    
                 
-                print("execute_query_tags() - tags found %s" % len(tags))
+                # print("execute_query_tags() - tags found %s" % len(tags))
                 return tags
             
         except Exception as e:
@@ -279,6 +279,39 @@ class DB:
     #
     # questions functions
     #
+    
+    def get_questions_by_tag(self, user_uuid=None):
+        # Überprüfen, ob eine user_uuid vorhanden ist
+        if user_uuid is None:
+            print("ERROR db_tool.get_questions_by_tag(user_uuid):: No user_uuid given.")
+            return {}
+        else:
+            print("************************* Start db_tool.get_questions_by_tag(user_uuid):: user_uuid: %s" % user_uuid)
+            
+        # get the tags for user_uuid
+        tags = self.get_tags_for_object(user_uuid)
+        # print("db_tool.get_questions_by_tag(user_uuid):: tags: %s" % tags)
+        
+        # get all questions for user_uuid
+        questions = self.get_questions(user_uuid)
+        # print("db_tool.get_questions_by_tag(user_uuid):: questions: %s" % questions)
+        
+        # get all questions for user_uuid
+        questions_by_tag = {}
+        for question_uuid in questions:
+            question = questions[question_uuid]
+            # print("db_tool.get_questions_by_tag(user_uuid):: check question: %s" % question['title'])
+            question_tags = self.get_tags_for_object(question['uuid'])
+            # print("db_tool.get_questions_by_tag(user_uuid):: question_tags: %s" % question_tags)
+            for tag in question_tags:                
+                if tag in tags:
+                    print("db_tool.get_questions_by_tag(user_uuid):: FOUND tag: %s" % tag)
+                    questions_by_tag[question_uuid] = question
+                    break
+        return questions_by_tag
+    
+    
+    
     def get_questions(self, user_uuid=None):
         # Überprüfen, ob eine user_uuid vorhanden ist
         if user_uuid is None:
