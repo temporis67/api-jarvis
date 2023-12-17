@@ -463,7 +463,7 @@ def delete_question():
 #
 # handling answers
 #
-@app.route(JARVIS_BASE_URL + '/api/answers', methods=['POST', 'GET'])
+@app.route(JARVIS_BASE_URL + '/api/get_answers', methods=['POST', 'GET'])
 @cross_origin()
 def get_answers():
     print("app.get_answers() Start")
@@ -474,10 +474,23 @@ def get_answers():
     if not question_uuid or str(question_uuid) == 'null':
         print("ERROR:: app.get_answers(): No question_uuid provided")
         return jsonify({'error': 'No question_uuid provided'}), 400
+    
+    isFilteredParam = request.form.get('filter')
+    isFiltered = False
+    if isFilteredParam and str(isFilteredParam) == 'true':
+        isFiltered = True
+    else:
+        isFiltered = False
+        
 
     try:
         print("app.get_answers() question_uuid: %s" % question_uuid)
-        answers = my_db.get_answers(question_uuid=question_uuid)
+        
+        if isFiltered:
+            answers = my_db.get_answers_by_tag(question_uuid=question_uuid)
+        else:
+            answers = my_db.get_answers(question_uuid=question_uuid)
+        
         print("app.get_answers() Success - %s answers found" % len(answers))
 #        print("TIME ELAPSED: %s" % answers)
         return jsonify(answers), 200

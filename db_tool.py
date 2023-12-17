@@ -142,6 +142,7 @@ class DB:
                  "JOIN object_tag ot ON t.uuid = ot.tag_uuid "
                  "WHERE ot.object_uuid = %s")
         values = (object_uuid,)
+        print("get_tags_for_object() uuid: %s" % (values))
         return self.execute_query_tags(query, values)
     
     def remove_tag_from_object(self, object_uuid=None, tag_uuid=None):
@@ -174,6 +175,7 @@ class DB:
                 for tag in res:
                     tags.append({'uuid': tag[0], 'name': tag[1]})                    
                 
+                print("execute_query_tags() - tags found %s" % len(tags))
                 return tags
             
         except Exception as e:
@@ -465,7 +467,42 @@ class DB:
     #
     # answers functions
     #
+    
+    # this function  get those answers to the question_uuid, which have the same tag as the question in the tabel object_tag
+    def get_answers_by_tag(self, question_uuid=None):
+        # Überprüfen, ob eine user_uuid vorhanden ist
+        if question_uuid is None:
+            print("ERROR db_tool.get_answers_by_tag(question_uuid):: No question_uuid given.")
+            return {}
+        else:
+            print("************************* Start db_tool.get_answers_by_tag(question_uuid):: question_uuid: %s" % question_uuid)
+            
+        # get the tags for question_uuid
+        tags = self.get_tags_for_object(question_uuid)
+        print("db_tool.get_answers_by_tag(question_uuid):: tags: %s" % tags)
+        
+        # get all answers for question_uuid
+        answers = self.get_answers(question_uuid)
+        # print("db_tool.get_answers_by_tag(question_uuid):: answers: %s" % answers)
+        
+        # get all answers for question_uuid
+        answers_by_tag = {}
+        for answer_uuid in answers:
+            answer = answers[answer_uuid]
+            print("db_tool.get_answers_by_tag(question_uuid):: check answer: %s" % answer['title'])
+            answer_tags = answer['tags']
+            # print("db_tool.get_answers_by_tag(question_uuid):: answer_tags: %s" % answer_tags)
+            for tag in answer_tags:                
+                if tag in tags:
+                    print("db_tool.get_answers_by_tag(question_uuid):: FOUND tag: %s" % tag)
+                    answers_by_tag[answer_uuid] = answer
+                    break
+                
+        return answers_by_tag
+    
+    
 
+    # this function gets all answers for a question_uuid
     def get_answers(self, question_uuid=None):
         # Überprüfen, ob eine user_uuid vorhanden ist
         if question_uuid is None:
