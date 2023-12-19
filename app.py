@@ -171,7 +171,7 @@ def ask():
         return jsonify(answer), 200
     except Exception as e:
         print("ERROR:: app.ask(): %s" % e)
-        # Hier ein geeignetes Logging-Framework verwenden
+        
         is_working = False
         return jsonify({'error': 'Internal server error'}), 500
 
@@ -299,13 +299,13 @@ def new_user():
 @app.route(JARVIS_BASE_URL + '/api/questions', methods=['POST', 'GET'])
 @cross_origin()
 def get_questions():
-    print("app.fetch_questions() Start")
+    print("\napp.get_questions() Start")
     if request.method != 'POST':
         return jsonify({'error': 'Only POST method is allowed'}), 405
 
     user_uuid = request.form.get('user_uuid')
     if not user_uuid or str(user_uuid) == 'null':
-        print("ERROR:: app.fetch_questions(): No user_uuid provided")
+        print("ERROR:: app.get_questions(): No user_uuid provided")
         return jsonify({'error': 'No user_uuid provided'}), 400
 
     isFilteredParam = request.form.get('filter')
@@ -316,16 +316,16 @@ def get_questions():
         isFiltered = False
 
     try:
-        print("app.fetch_questions() user_uuid: %s" % user_uuid)
+        print("app.get_questions() user_uuid: %s" % user_uuid)
         if isFiltered:
             questions = my_db.get_questions_by_tag(user_uuid=user_uuid)
         else:
             questions = my_db.get_questions(user_uuid=user_uuid)
-        print("app.fetch_questions() Success - %s questions found" % len(questions))
+        print("app.get_questions() Success - %s questions found" % len(questions))
         return jsonify(questions), 200
     except Exception as e:
-        print("ERROR:: app.fetch_questions(): %s" % e)
-        # Hier ein geeignetes Logging-Framework verwenden
+        print("ERROR:: app.get_questions(): %s" % e)
+        
         return jsonify({'error': 'Internal server error'}), 500
 
 
@@ -355,7 +355,7 @@ def new_question():
         return jsonify(question), 200
     except Exception as e:
         print("ERROR:: app.new_question(): %s" % e)
-        # Hier ein geeignetes Logging-Framework verwenden
+        
         return jsonify({'error': 'Internal server error'}), 500
 
 
@@ -388,7 +388,7 @@ def update_question_rank():
         return jsonify(question), 200
     except Exception as e:
         print("ERROR:: app.update_question_rank(): %s" % e)
-        # Hier ein geeignetes Logging-Framework verwenden
+        
         return jsonify({'error': 'Internal server error'}), 500
 
 
@@ -439,7 +439,7 @@ def update_question():
         return jsonify(question), 200
     except Exception as e:
         print("ERROR:: app.update_question() end: %s" % e)
-        # Hier ein geeignetes Logging-Framework verwenden
+        
         return jsonify({'error': 'Internal server error'}), 500
 
 
@@ -465,7 +465,7 @@ def delete_question():
         return jsonify(question), 200
     except Exception as e:
         print("ERROR:: app.delete_question(): %s" % e)
-        # Hier ein geeignetes Logging-Framework verwenden
+        
         return jsonify({'error': 'Internal server error'}), 500
 
 
@@ -505,7 +505,7 @@ def get_answers():
         return jsonify(answers), 200
     except Exception as e:
         print("ERROR:: app.get_answers(): %s" % e)
-        # Hier ein geeignetes Logging-Framework verwenden
+        
         return jsonify({'error': 'Internal server error'}), 500
 
 
@@ -537,7 +537,7 @@ def new_answer():
         return jsonify(answer), 200
     except Exception as e:
         print("ERROR:: app.new_answer(): %s" % e)
-        # Hier ein geeignetes Logging-Framework verwenden
+        
         return jsonify({'error': 'Internal server error'}), 500
 
 @app.route(JARVIS_BASE_URL + '/api/update_answer_rank', methods=['POST', 'GET'])
@@ -569,7 +569,7 @@ def update_answer_rank():
         return jsonify(answer), 200
     except Exception as e:
         print("ERROR:: app.update_answer_rank(): %s" % e)
-        # Hier ein geeignetes Logging-Framework verwenden
+        
         return jsonify({'error': 'Internal server error'}), 500
 
 @app.route(JARVIS_BASE_URL + '/api/update_answer', methods=['POST', 'GET'])
@@ -598,7 +598,7 @@ def update_answer():
         return jsonify(answer), 200
     except Exception as e:
         print("ERROR:: app.update_answer(): %s" % e)
-        # Hier ein geeignetes Logging-Framework verwenden
+        
         return jsonify({'error': 'Internal server error'}), 500
 
 @app.route(JARVIS_BASE_URL + '/api/delete_answer', methods=['POST', 'GET'])
@@ -618,14 +618,14 @@ def delete_answer():
         return jsonify(answer), 200
     except Exception as e:
         print("ERROR:: app.delete_answer(): %s" % e)
-        # Hier ein geeignetes Logging-Framework verwenden
+        
         return jsonify({'error': 'Internal server error'}), 500
 
 
 @app.route(JARVIS_BASE_URL + '/api/get_models', methods=['POST', 'GET'])
 @cross_origin()
 def get_models():
-    print("app.get_models() Start")
+    # print("app.get_models() Start")
     if request.method != 'POST':
         return jsonify({'error': 'Only POST method is allowed'}), 405
 
@@ -635,7 +635,7 @@ def get_models():
         return jsonify(models), 200
     except Exception as e:
         print("ERROR:: app.get_models(): %s" % e)
-        # Hier ein geeignetes Logging-Framework verwenden
+        
         return jsonify({'error': 'Internal server error'}), 500
 
 @app.route(JARVIS_BASE_URL + '/api/add_model', methods=['POST', 'GET'])
@@ -662,7 +662,7 @@ def add_model():
         return jsonify(model), 200
     except Exception as e:
         print("ERROR:: app.add_model(): %s" % e)
-        # Hier ein geeignetes Logging-Framework verwenden
+        
         return jsonify({'error': 'Internal server error'}), 500
 
 @app.route(JARVIS_BASE_URL + '/api/update_model', methods=['POST', 'GET'])
@@ -690,7 +690,7 @@ def update_model():
     except Exception as e:
         print("ERROR:: app.update_model(): %s" % e)
         print("ERROR:: app.update_model(): %s" % model)
-        # Hier ein geeignetes Logging-Framework verwenden
+        
         return jsonify({'error': 'Internal server error'}), 500
 
 @app.route(JARVIS_BASE_URL + '/api/delete_model', methods=['POST', 'GET'])
@@ -716,7 +716,7 @@ def delete_model():
         return jsonify({"message":"Model deleted."}), 200
     except Exception as e:
         print("ERROR:: app.delete_model(): %s" % e)
-        # Hier ein geeignetes Logging-Framework verwenden
+        
         return jsonify({'error': 'Internal server error'}), 500
     
 # expects param 'tag' in the request
@@ -739,7 +739,7 @@ def get_tag():
         return jsonify(found_tag), 200
     except Exception as e:
         print("ERROR:: app.get_tag(): %s" % e)
-        # Hier ein geeignetes Logging-Framework verwenden
+        
         return jsonify({'error': 'Internal server error'}), 500
 
 # this function set one tag to a given object_uuid
@@ -747,12 +747,12 @@ def get_tag():
 @app.route(JARVIS_BASE_URL + '/api/add_tag_to_object', methods=['POST', 'GET'])
 @cross_origin()
 def add_tag_to_object():
-    print("app.add_tag_to_object() Start")
+    
     if request.method != 'POST':
         return jsonify({'error': 'Only POST method is allowed'}), 405
     
     object_uuid = request.form.get('object_uuid')
-    if not object_uuid or str(object_uuid) == 'null':
+    if not object_uuid or str(object_uuid) == 'null' or str(object_uuid) == '':
         print("ERROR:: app.add_tag_to_object(): No object_uuid provided")
         return jsonify({'error': 'No object_uuid provided'}), 400
     
@@ -761,6 +761,8 @@ def add_tag_to_object():
         print("ERROR:: app.add_tag_to_object(): No tag provided")
         return jsonify({'error': 'No tag provided'}), 400
     tag = json.loads(tag)
+    
+    print("app.add_tag_to_object() %s %s" % (tag['name'], object_uuid))
 
     try:
         my_db.add_tag_to_object(object_uuid, tag['uuid'])
@@ -769,7 +771,7 @@ def add_tag_to_object():
         return jsonify(tag), 200
     except Exception as e:
         print("ERROR:: app.add_tag_to_object(): %s" % e)
-        # Hier ein geeignetes Logging-Framework verwenden
+        
         return jsonify({'error': 'Internal server error'}), 500
 
 
@@ -806,7 +808,7 @@ def set_tags_for_answer():
         return jsonify({'success': True}), 200
     except Exception as e:
         print("ERROR:: app.set_tags_for_answer(): %s" % e)
-        # Hier ein geeignetes Logging-Framework verwenden
+        
         return jsonify({'error': 'Internal server error'}), 500
 
 
@@ -837,7 +839,7 @@ def remove_tag_from_object():
         return jsonify(tag_uuid), 200
     except Exception as e:
         print("ERROR:: app.remove_tag_from_object(): %s" % e)
-        # Hier ein geeignetes Logging-Framework verwenden
+        
         return jsonify({'error': 'Internal server error'}), 500
     
 # this function gets all tags for an object_uuid
@@ -862,7 +864,7 @@ def get_tags_for_object():
         return jsonify(tags), 200
     except Exception as e:
         print("ERROR:: app.get_tags_for_object(): %s" % e)
-        # Hier ein geeignetes Logging-Framework verwenden
+        
         return jsonify({'error': 'Internal server error'}), 500
     
 # this function generates a list of tags with jarvis.tag(content)
@@ -891,7 +893,141 @@ def generate_tags():
         return jsonify(tags), 200
     except Exception as e:
         print("ERROR:: app.generate_tags(): %s" % e)
-        # Hier ein geeignetes Logging-Framework verwenden
+        
+        return jsonify({'error': 'Internal server error'}), 500
+
+
+# function for new_filter
+# expects 'name' as parameter in request
+@app.route(JARVIS_BASE_URL + '/api/new_filter', methods=['POST', 'GET'])
+@cross_origin()
+def new_filter():
+    if request.method != 'POST':
+        return jsonify({'error': 'Only POST method is allowed'}), 405
+    
+    if not request.form.get('name'):
+        print("ERROR:: app.new_filter(): No name provided")
+        # return jsonify({'error': 'No name provided'}), 400
+        name = ""
+    else:
+        name = request.form.get('name')
+    
+    return jsonify(my_db.new_filter(name)), 200
+
+# function to add a filter to a question
+@app.route(JARVIS_BASE_URL + '/api/add_question_filter', methods=['POST', 'GET'])
+@cross_origin()
+def add_question_filter():
+    if request.method != 'POST':
+        return jsonify({'error': 'Only POST method is allowed'}), 405
+    
+    question_uuid = request.form.get('question_uuid')
+    if not question_uuid or str(question_uuid) == 'null':
+        print("ERROR:: app.add_question_filter(): No question_uuid provided")
+        return jsonify({'error': 'No question_uuid provided'}), 400
+    
+    filter_uuid = request.form.get('filter_uuid')
+    if not filter_uuid or str(filter_uuid) == 'null':
+        print("ERROR:: app.add_question_filter(): No filter_uuid provided")
+        return jsonify({'error': 'No filter_uuid provided'}), 400
+    
+    try:
+        my_db.add_question_filter(question_uuid, filter_uuid)
+        print("app.add_question_filter() Success")
+        
+        return jsonify({'success': True}), 200
+    except Exception as e:
+        print("ERROR:: app.add_question_filter(): %s" % e)
+        
+        return jsonify({'error': 'Internal server error'}), 500
+
+# function to add a filter to an answer
+@app.route(JARVIS_BASE_URL + '/api/add_answer_filter', methods=['POST', 'GET'])
+@cross_origin()
+def add_answer_filter():
+    if request.method != 'POST':
+        return jsonify({'error': 'Only POST method is allowed'}), 405
+    
+    answer_uuid = request.form.get('answer_uuid')
+    if not answer_uuid or str(answer_uuid) == 'null':
+        print("ERROR:: app.add_answer_filter(): No answer_uuid provided")
+        return jsonify({'error': 'No answer_uuid provided'}), 400
+    
+    filter_uuid = request.form.get('filter_uuid')
+    if not filter_uuid or str(filter_uuid) == 'null':
+        print("ERROR:: app.add_answer_filter(): No filter_uuid provided")
+        return jsonify({'error': 'No filter_uuid provided'}), 400
+    
+    try:
+        my_db.add_answer_filter(answer_uuid, filter_uuid)
+        print("app.add_answer_filter() Success")
+        
+        return jsonify({'success': True}), 200
+    except Exception as e:
+        print("ERROR:: app.add_answer_filter(): %s" % e)
+        
+        return jsonify({'error': 'Internal server error'}), 500
+
+# function to set filter to a user - unused
+@app.route(JARVIS_BASE_URL + '/api/set_user_filter', methods=['POST', 'GET'])
+@cross_origin()
+def set_user_filter():
+    return jsonify({'error': 'Function not tested'}), 400
+    if request.method != 'POST':
+        return jsonify({'error': 'Only POST method is allowed'}), 405
+    
+    user_uuid = request.form.get('user_uuid')
+    if not user_uuid or str(user_uuid) == 'null':
+        print("ERROR:: app.set_user_filter(): No user_uuid provided")
+        return jsonify({'error': 'No user_uuid provided'}), 400
+    
+    filter_uuid = request.form.get('filter_uuid')
+    my_filter = None
+    if not filter_uuid or str(filter_uuid) == 'null':
+        print("ERROR:: app.set_user_filter(): No filter_uuid provided")
+        my_filter = my_db.new_filter(name=user_uuid)
+        filter_uuid = my_filter['uuid']
+    
+    try:
+        my_db.update_user_filter(user_uuid, filter_uuid)
+        print("app.set_user_filter() Success")
+        
+        return jsonify(my_filter), 200
+    except Exception as e:
+        print("ERROR:: app.set_user_filter(): %s" % e)
+        
+        return jsonify({'error': 'Internal server error'}), 500
+    
+    
+# function to get the filter of a user by filter_uuid
+# expects param 'user_uuid' in the request
+@app.route(JARVIS_BASE_URL + '/api/get_user_filter', methods=['POST', 'GET'])
+@cross_origin()
+def get_user_filter():
+    # print("app.get_user_filter() Start")
+    if request.method != 'POST':
+        return jsonify({'error': 'Only POST method is allowed'}), 405
+    
+    user_uuid = request.form.get('user_uuid')
+    if not user_uuid or str(user_uuid) == 'null':
+        print("ERROR:: app.get_user_filter(): No user_uuid provided")
+        return jsonify({'error': 'No user_uuid provided'}), 400
+
+    try:
+        filter_uuid = my_db.get_user_filter(user_uuid)        
+        if filter_uuid is None:
+            print("app.get_user_filter() No filter found, New Filter")
+            new_filter = my_db.new_filter(name=user_uuid)
+            filter_uuid = new_filter['uuid']
+            print("app.get_user_filter() New Filter: %s" % filter_uuid)
+            print("Update User Filter user_uuid: %s " % (user_uuid,) )
+            my_db.update_user_filter(user_uuid, filter_uuid)
+        
+        print("app.get_user_filter() Success - %s filter found" % filter_uuid)
+        return jsonify(filter_uuid), 200
+    except Exception as e:
+        print("ERROR:: app.get_user_filter(): %s" % e)
+        
         return jsonify({'error': 'Internal server error'}), 500
 
 #

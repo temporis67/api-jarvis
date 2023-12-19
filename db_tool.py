@@ -55,9 +55,9 @@ class DB:
             values = (tag["name"],)
 
         if query:
-            print("get_tag() - query: %s, %s" % (query, values))
+            print("get_tag_by_name() - query: %s, %s" % (query, values))
             tags = self.execute_query_tags(query, values)
-            print("get_tag() - tags: %s" % tags)
+            print("get_tag_by_name() - tags: %s" % tags)
             if tags:
                 return tags[0]
             else:
@@ -133,7 +133,7 @@ class DB:
         return True
     
     def get_tags_for_object(self, object_uuid=None):
-        if object_uuid is None:
+        if object_uuid is None or str(object_uuid) == "":
             # Log error or raise an exception
             print("ERROR: get_tags_for_object() - no object_uuid")
             return None
@@ -165,9 +165,10 @@ class DB:
         values = ()
         return self.execute_query_tags(query, values)
     
-    def execute_query_tags(self, query, values):
+    def execute_query_tags(self, query, values):        
         try:
             with self.conn.cursor() as cur:
+                # print("execute_query_tags() - query: %s, values: %s" % (query, values))
                 cur.execute(query, values)
                 res = cur.fetchall()
                 
@@ -181,6 +182,7 @@ class DB:
         except Exception as e:
             # Log exception
             print("Error:: execute_query_tags() - %s" % e)
+            self.conn.rollback()
             return None
         
     def execute_query(self, query, values):
@@ -193,6 +195,7 @@ class DB:
         except Exception as e:
             # Log exception
             print("Error:: execute_query() - %s" % e)
+            self.conn.rollback()
             return False
 
     #
@@ -288,9 +291,12 @@ class DB:
         else:
             print("************************* Start db_tool.get_questions_by_tag(user_uuid):: user_uuid: %s" % user_uuid)
             
+        user_filter = self.get_user_filter(user_uuid)
+        print("db_tool.get_questions_by_tag(user_uuid):: user_filter: %s" % user_filter)
+        
         # get the tags for user_uuid
-        tags = self.get_tags_for_object(user_uuid)
-        # print("db_tool.get_questions_by_tag(user_uuid):: tags: %s" % tags)
+        tags = self.get_tags_for_object(user_filter)
+        print("db_tool.get_questions_by_tag(user_uuid):: tags: %s" % tags)
         
         # get all questions for user_uuid
         questions = self.get_questions(user_uuid)
@@ -318,11 +324,13 @@ class DB:
             print("ERROR db_tool.get_questions(user_uuid):: No user_uuid given.")  # Log error oder raise an exception
             return {}
         else:
-            print("db_tool.get_questions(user_uuid):: user_uuid: %s" % user_uuid)
+            # print("db_tool.get_questions(user_uuid):: user_uuid: %s" % user_uuid)
+            pass
 
         # Parametrisierte Abfrage verwenden
         query = (
-            "SELECT qu.question_uuid, q.title, q.content, q.date_created, q.date_updated, u.username, qu.rank "
+            "SELECT qu.question_uuid, q.title, q.content, q.date_created, q.date_updated, u.username, qu.rank, "
+            "q.filter_uuid "
             "FROM user_question AS qu "
             "JOIN questions AS q ON qu.question_uuid = q.uuid "
             "JOIN users AS u ON qu.user_uuid = u.uuid "
@@ -337,7 +345,7 @@ class DB:
 
                 questions = {}
                 for qu in res:
-                    print("db_tool.get_questions(user_uuid):: qu: %s" % qu[4])
+                    # print("db_tool.get_questions(user_uuid):: qu: %s" % qu[4])
 
                     date_created = qu[3]
                     date_updated = qu[4]
@@ -352,8 +360,10 @@ class DB:
                         'user_uuid': user_uuid,
                         'user_name': qu[5],
                         'rank': qu[6],
+                        'filter_uuid': qu[7],
                     }
 
+                print("db_tool.get_questions(user_uuid):: %s questions found." % len(questions))
                 return questions
 
         except Exception as e:
@@ -861,3 +871,112 @@ class DB:
         except Exception as e:
             print("ERROR db_tool.delete_model(model_uuid):: %s" % e)
             return {}
+
+    # all functions to handle filters
+    # CREATE TABLE filter(
+    # uuid uuid NOT NULL DEFAULT uuid_generate_v1(),
+    # name varchar(255) NOT NULL,
+    # PRIMARY KEY(uuid)
+    # );
+    
+    def new_filter(self, name=None):
+        print("db_tool.new_filter() Start - name: %s" % name)
+        if name is None:
+            # Log error or raise an exception
+            print("WARNING: db_tool.new_filter() - no name")
+            # name = ""
+        
+        query = "INSERT INTO filter (uuid, name) VALUES (DEFAULT, %s) RETURNING uuid, name"
+        values = (name,)
+        print("new_filter() - query: %s, values: %s" % (query, values))
+        
+        try:
+            with self.conn.cursor() as cur:
+                cur.execute(query, values)
+                res = cur.fetchone()
+                self.conn.commit()
+                if res:
+                    # Log successful operation
+                    print("new_filter() - filter inserted %s" % res[0])
+                    filter = {'uuid': res[0], 'name': res[1]}
+                    return filter
+                else:
+                    # Log error or raise an exception
+                    print("new_filter() - no res returned")
+                    return None
+                
+        except Exception as e:
+            # Log exception
+            print("new_filter() - %s" % e)
+            return None
+    
+    # function to update questions.filter_uuid
+    # expects a question_uuid and a filter_uuid
+    def add_question_filter(self, question_uuid=None, filter_uuid=None):
+        if question_uuid is None or filter_uuid is None:
+            # Log error or raise an exception
+            print("ERROR: add_question_filter() - no question_uuid or filter_uuid")
+            return None
+        
+        query = "UPDATE questions SET filter_uuid = %s WHERE uuid = %s"
+        values = (filter_uuid, question_uuid)
+        return self.execute_query(query, values)
+    
+    def add_answer_filter(self, answer_uuid=None, filter_uuid=None):
+        if answer_uuid is None or filter_uuid is None:
+            # Log error or raise an exception
+            print("ERROR: add_answer_filter() - no answer_uuid or filter_uuid")
+            return None
+        
+        query = "UPDATE answers SET filter_uuid = %s WHERE uuid = %s"
+        values = (filter_uuid, answer_uuid)
+        return self.execute_query(query, values)
+    
+    def update_user_filter(self, user_uuid=None, filter_uuid=None):
+        if user_uuid is None or filter_uuid is None:
+            # Log error or raise an exception
+            print("ERROR: update_user_filter() - no user_uuid or filter_uuid")
+            return None
+        
+        insert_query = "INSERT INTO user_filter (user_uuid, filter_uuid) VALUES (%s, %s)"
+        insert_values = (user_uuid, filter_uuid)
+        try:
+            with self.conn.cursor() as cur:
+                cur.execute(insert_query, insert_values)
+                self.conn.commit()
+                return True
+        except Exception as e:
+            
+            query = "UPDATE user_filter SET filter_uuid = %s WHERE user_uuid = %s"
+            values = (filter_uuid, user_uuid)
+            return self.execute_query(query, values)
+
+        return False
+    
+    def get_user_filter(self, user_uuid=None):
+        if user_uuid is None:
+            # Log error or raise an exception
+            print("ERROR: get_user_filter() - no user_uuid")
+            return None
+        
+        query = "SELECT filter_uuid FROM user_filter WHERE user_uuid = %s"
+        values = (user_uuid,)
+        
+        try:
+            with self.conn.cursor() as cur:
+                cur.execute(query, values)
+                res = cur.fetchone()
+                
+                if res:
+                    # Log successful operation
+                    print("get_user_filter() - filter found %s" % res[0])
+                    return res[0]
+                else:
+                    # Log error or raise an exception
+                    print("get_user_filter() - no res returned")
+                    return None
+        except Exception as e:
+            # Log exception
+            print("get_user_filter() - %s" % e)
+            return None
+    
