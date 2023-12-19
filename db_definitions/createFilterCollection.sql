@@ -26,6 +26,8 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
+ALTER Function delete_filter_on_object_delete() OWNER TO "ai-chat-pguser";
+
 ALTER TABLE questions DROP CONSTRAINT IF EXISTS questions_filter_uuid_fkey;
 ALTER TABLE answers DROP CONSTRAINT IF EXISTS answers_filter_uuid_fkey;
 
@@ -48,4 +50,4 @@ CREATE TABLE user_filter (
     FOREIGN KEY (user_uuid) REFERENCES users(uuid) ON DELETE CASCADE,
     FOREIGN KEY (filter_uuid) REFERENCES filter(uuid) ON DELETE CASCADE
 );
-
+ALTER TABLE user_filter OWNER TO "ai-chat-pguser";
