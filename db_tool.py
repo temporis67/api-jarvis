@@ -283,7 +283,7 @@ class DB:
     # questions functions
     #
     
-    def get_questions_by_tag(self, user_uuid=None):
+    def get_questions_by_tag(self, user_uuid=None, filter_uuid=None):
         # Überprüfen, ob eine user_uuid vorhanden ist
         if user_uuid is None:
             print("ERROR db_tool.get_questions_by_tag(user_uuid):: No user_uuid given.")
@@ -291,7 +291,11 @@ class DB:
         else:
             print("************************* Start db_tool.get_questions_by_tag(user_uuid):: user_uuid: %s" % user_uuid)
             
-        user_filter = self.get_user_filter(user_uuid)
+        if filter_uuid is None:
+            user_filter = self.get_user_filter(user_uuid)
+        else:
+            user_filter = filter_uuid
+            
         print("db_tool.get_questions_by_tag(user_uuid):: user_filter: %s" % user_filter)
         
         # get the tags for user_uuid
@@ -512,17 +516,21 @@ class DB:
     #
     
     # this function  get those answers to the question_uuid, which have the same tag as the question in the tabel object_tag
-    def get_answers_by_tag(self, question_uuid=None):
+    def get_answers_by_tag(self, question_uuid=None, filter_uuid=None):
         # Überprüfen, ob eine user_uuid vorhanden ist
         if question_uuid is None:
             print("ERROR db_tool.get_answers_by_tag(question_uuid):: No question_uuid given.")
             return {}
         else:
             print("************************* Start db_tool.get_answers_by_tag(question_uuid):: question_uuid: %s" % question_uuid)
-            
-        # get the tags for question_uuid
-        tags = self.get_tags_for_object(question_uuid)
-        print("db_tool.get_answers_by_tag(question_uuid):: tags: %s" % tags)
+
+        if filter_uuid is None:            
+            # get the tags for question_uuid
+            tags = self.get_tags_for_object(question_uuid)
+            print("db_tool.get_answers_by_tag():: FILTER: %s" % tags)
+        else:
+            tags = self.get_tags_for_object(filter_uuid)
+            print("db_tool.get_answers_by_tag():: NO FILTER: %s" % tags)
         
         # get all answers for question_uuid
         answers = self.get_answers(question_uuid)
@@ -532,7 +540,7 @@ class DB:
         answers_by_tag = {}
         for answer_uuid in answers:
             answer = answers[answer_uuid]
-            print("db_tool.get_answers_by_tag(question_uuid):: check answer: %s" % answer['title'])
+            print("db_tool.get_answers_by_tag(question_uuid):: check answer: %s" % answer['tags'])
             answer_tags = answer['tags']
             # print("db_tool.get_answers_by_tag(question_uuid):: answer_tags: %s" % answer_tags)
             for tag in answer_tags:                

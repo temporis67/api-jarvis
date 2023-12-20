@@ -310,7 +310,9 @@ def get_questions():
 
     isFilteredParam = request.form.get('filter')
     isFiltered = False
+    filter_uuid = None
     if isFilteredParam and str(isFilteredParam) == 'true':
+        filter_uuid = request.form.get('filter_uuid')
         isFiltered = True
     else:
         isFiltered = False
@@ -318,7 +320,7 @@ def get_questions():
     try:
         print("app.get_questions() user_uuid: %s" % user_uuid)
         if isFiltered:
-            questions = my_db.get_questions_by_tag(user_uuid=user_uuid)
+            questions = my_db.get_questions_by_tag(user_uuid=user_uuid, filter_uuid=filter_uuid)
         else:
             questions = my_db.get_questions(user_uuid=user_uuid)
         print("app.get_questions() Success - %s questions found" % len(questions))
@@ -486,8 +488,10 @@ def get_answers():
     
     isFilteredParam = request.form.get('filter')
     isFiltered = False
+    filter_uuid = None
     if isFilteredParam and str(isFilteredParam) == 'true':
         isFiltered = True
+        filter_uuid = request.form.get('filter_uuid')
     else:
         isFiltered = False
         
@@ -496,7 +500,7 @@ def get_answers():
         print("app.get_answers() question_uuid: %s" % question_uuid)
         
         if isFiltered:
-            answers = my_db.get_answers_by_tag(question_uuid=question_uuid)
+            answers = my_db.get_answers_by_tag(question_uuid=question_uuid, filter_uuid=filter_uuid)
         else:
             answers = my_db.get_answers(question_uuid=question_uuid)
         
