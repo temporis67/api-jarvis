@@ -26,15 +26,13 @@ JARVIS_PORT=os.getenv('JARVIS_PORT') or "5000"
 JARVIS_BASE_URL=os.getenv('JARVIS_BASE_URL') or ""
 
 
-
-
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'vnkdjnfjknflasdf123s2#'
 app.config['DEBUG'] = 'True'
 
 my_jarvis = Jarvis()
 my_db = DB()
-my_tagger = Tagger()
+my_tagger = Tagger(my_jarvis)
 
 CORS(app)
 

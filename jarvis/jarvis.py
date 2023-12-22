@@ -18,10 +18,19 @@ n_batch = 512  # Should be between 1 and n_ctx, consider the amount of VRAM in y
 
 # model_name = "spicyboros-13b-2.2.Q5_K_M.gguf"
 # model_name = "Llama-2-13b-chat-german-GGUF.q5_K_M.bin"
-model_name = "tinyllama-1.1b-chat-v0.6.Q5_K_M.gguf"
+model_name = "mistral-7b-openorca.Q5_K_M.gguf"
 
 # "ON" or "OFF
 LOAD_LLM = "ON"
+
+# Prompt for the tagger
+MISTRAL_TAGGER_PROMPT = '''Find three keywords matching the following text delimited by triple backquotes.
+```{content}```
+Write each of the three keywords with relevance scores in JSON Format with nothing else, no comments. Use "keyword" and "score" as field names.
+THREE KEYWORDS IN JSON: '''
+
+# Model for the tagger
+TAGGER_MODEL_NAME = "mistral-7b-openorca.Q5_K_M.gguf"
 
 
 class Jarvis:
@@ -48,6 +57,34 @@ class Jarvis:
         else:
             self.llm = None
         return
+
+
+    def tag_content(self, content):
+        tag_string = None
+        
+        if (TAGGER_MODEL_NAME != self.current_loaded_model):
+            self.switch_local_model(TAGGER_MODEL_NAME)
+
+        
+        prompt = MISTRAL_TAGGER_PROMPT.replace("{content}", content)
+        # print ("** Tagger Start: ", repr(prompt))                
+        time_start = time.time()
+        output = self.llm(prompt,
+                              max_tokens=150,
+                              # stop=["</s>", ],
+                              echo=False,
+                              temperature=0.2,
+                              top_p=0.5,
+                              top_k=3,
+                              )
+        # print("** Tagger ready: ", repr(output))
+        time_to_load = time.time() - time_start
+        ptime = "%.1f" % time_to_load
+        print("** TIME %s seconds" % ptime)
+        tag_string = output["choices"][0]["text"]
+                
+        return tag_string
+
 
     
 

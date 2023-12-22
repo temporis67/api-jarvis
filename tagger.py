@@ -13,7 +13,7 @@ n_batch = 512  # Should be between 1 and n_ctx, consider the amount of VRAM in y
 
 # model_name = "spicyboros-13b-2.2.Q5_K_M.gguf"
 # model_name = "Llama-2-13b-chat-german-GGUF.q5_K_M.bin"
-tagger_model_name = "tinyllama-1.1b-chat-v0.6.Q5_K_M.gguf"
+tagger_model_name = "mistral-7b-openorca.Q5_K_M.gguf"
 
 QUALITY_TAGGER_PROMPT = '''
 <|system|> 
@@ -58,7 +58,7 @@ Zone liegen, was Fragen nach möglichem außerirdischem Leben aufwirft.</s>
 <|assistant|>
 '''
 
-TAGGER_PROMPT = '''<|system|>You are a code generator. Always output your answer in JSON. No pre-amble.</s>
+TINYLLAMA_PROMPT = '''<|system|>You are a code generator. Always output your answer in JSON. No pre-amble.</s>
 <|user|>Exoplaneten, Planeten außerhalb unseres Sonnensystems, sind seit der ersten Entdeckung 1995 
 ein faszinierendes Forschungsfeld. Sie umkreisen fremde Sterne und bieten Einblicke in die Vielfalt 
 des Universums. Mit Tausenden entdeckten Exoplaneten, von erdähnlichen bis zu Gasriesen, erweitern 
@@ -70,58 +70,45 @@ Zone liegen, was Fragen nach möglichem außerirdischem Leben aufwirft.</s>
 <|assistant|>
 '''
 
+
+
 class Tagger:
     
     tagger = None
     conn = None
     
-    def __init__(self):
+    def __init__(self, my_jarvis=None):
         
         if self.tagger is None:
             print("LOADING tagger: %s" % tagger_model_name)
             time_start = time.time()
-            self.tagger = Llama(model_path="models/" + tagger_model_name,
-                             n_ctx=4096,
-                             n_gpu_layers=n_gpu_layers,
-                             n_batch=n_batch,
-                             verbose=True)
+#            self.tagger = Llama(model_path="models/" + tagger_model_name,
+#                             n_ctx=1024,
+#                             n_gpu_layers=n_gpu_layers,
+#                             n_batch=n_batch,
+#                             verbose=True)
+            self.tagger = my_jarvis
             time_to_load = time.time() - time_start
             ptime = "%.1f" % time_to_load
             print("loaded tagger %s in %s seconds" % (tagger_model_name, ptime))
         if self.conn is None:
             self.connect_db()
 
-    def tag_content(self, content):
-        tag_string = None
-        
-        prompt = QTP2.replace("{content}", content)
-        # print ("** Tagger Start: ", repr(prompt))                
-        time_start = time.time()
-        output = self.tagger(prompt,
-                              max_tokens=256,
-                              stop=["</s>", ],
-                              echo=False,
-                              temperature=0.2,
-                              top_p=0.5,
-                              top_k=3,
-                              )
-        # print("** Tagger ready: ", repr(output))
-        time_to_load = time.time() - time_start
-        ptime = "%.1f" % time_to_load
-        print("** TIME %s seconds" % ptime)
-        tag_string = output["choices"][0]["text"]
-                
-        return tag_string
+
     
             
     def tag(self, object_uuid, content):
         if content is None or content == "":
             print("ERROR:: Tagger.tag() No content specified.")
             raise Exception("ERROR:: Tagger.tag() No content specified.")
-        # this gets an answer from the model
-        tag_string = self.tag_content(content)
+        
+        
+        #########################################
+        # this gets an answer from the model via jarvis.py
+        tag_string = self.tagger.tag_content(content)
         # this tries to format the model answer to a tag dictionary
         tags = self.format_tags(tag_string)
+        
         
         for tag in tags[0:3]:
             print("TAG: ", tag)
@@ -132,21 +119,22 @@ class Tagger:
     def format_tags(self, tag_string):
         tags = []
         jtags = []
+        
+        print("format_tags() - tag_string: %s" % tag_string)
+        
+        
         if (tag_string is None or tag_string == ""):
             return tags
         try:
             
-            if '"tags":' not in tag_string:
-                print("Warning:: ReDo: No tags found in: %s" % tag_string)
-                # the answer does not contain the "tags": marker. Mostly the model talks too much. So lets tag that answer for it should be same topic but shorter
-                tag_string2 = self.tag_content(tag_string)
-                if tag_string2.find("tags") == -1:
-                    print("ERROR:: Tagger.format_tags() No tags found in: %s" % tag_string2)
+            if '"keyword":' not in tag_string:
+                    print("ERROR:: Tagger.format_tags() No tags found in: %s" % tag_string)
                     return tags
-                else:
-                    tag_string = tag_string2
+            else:
+                tag_string = tag_string
             
             # tag_string = {"max-items": "3", "tags": [ {"name":"Ameisen", "score":90}, {"name":"Kommunikation", "score":75}, {"name":"Pheromone", "score":62},]}
+            # [{   "keyword": "Wolkenkratzer",   "score": 10  },  {   "keyword": "hohe Gebäude",   "score": 8  },  {   "keyword": "Ingenieurwesen",   "score": 7  }]
             try:
                 print("TAGSTRING: ", tag_string)
                 jtags = json.loads(tag_string)
@@ -155,18 +143,15 @@ class Tagger:
                 print("ERROR:: Exception: %s" % e)
                 return tags
             
-            if not "tags" in jtags:
-                print("ERROR:: Tagger.format_tags() No tags found in: %s" % tag_string)
-                return tags
-            mtags = jtags["tags"]
-            if not isinstance(mtags, list):
-                print("ERROR:: Tagger.format_tags() No tags found in: %s" % tag_string)
-                return tags
-            print(len(mtags), " TAGS generated: ", mtags)
-            for tag in mtags:
+            tags2=[]
+            for jtag in jtags:
+                tags2.append({"name": jtag["keyword"], "score": jtag["score"]})
+
+            print(len(tags2), " TAGS2 generated: ", tags2)
+            for tag in tags2:
                 # get the uuid of the tag by name from db
-                tag2 = self.get_tag_by_name(tag["name"])
-                tags.append({"uuid": tag2["uuid"], "name": tag2["name"]})
+                tag3 = self.get_tag_by_name(tag["name"])
+                tags.append({"uuid": tag3["uuid"], "name": tag3["name"]})
             print(len(tags), " TAGS generated: ", tags)
             return tags
         except Exception as e:
@@ -254,7 +239,6 @@ class Tagger:
             # Log exception
             print("Error:: execute_query_tags() - %s" % e)
             return None
-
     
     def connect_db(self):
         host = os.environ.get('POSTGRES_HOST')
@@ -270,6 +254,8 @@ class Tagger:
    
    
        # this function adds a tag to an object via table object_table
+
+
     def add_tag_to_object(self, object_uuid=None, tag_uuid=None):
         if object_uuid is None or tag_uuid is None:
             # Log error or raise an exception
@@ -300,7 +286,7 @@ class Tagger:
     def demo(self, content):
         # print("\nText: ", content)
         print("\n")
-        print("Result: ", self.tag(content))
+        print("Result: ", self.tag(object_uuid="84f0defc-a028-11ee-a957-047c16bbac51",content=content))
         return True
     
 if __name__ == "__main__":
@@ -312,6 +298,6 @@ if __name__ == "__main__":
         
     load_dotenv()
     my_tagger = Tagger()
-    my_tagger.demo(content1)
+    # my_tagger.demo(content1)
     # my_tagger.demo(content2)
     # my_tagger.demo(content3)
